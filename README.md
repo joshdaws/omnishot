@@ -4,7 +4,7 @@ Screen capture, scrolling screenshots, annotation, and screen recording for Omar
 
 **Early community release — v0.2.0.** Inspired by the CleanShot X workflow, with broad local functionality implemented. Exact feature and UI/UX parity is still being worked on. This is an independent project, with no affiliation with CleanShot.
 
-[User guide](docs/USAGE.md) · [Known limitations](docs/KNOWN_LIMITATIONS.md) · [Roadmap / issues](https://github.com/joshdaws/omnishot/issues) · [Contributing](CONTRIBUTING.md)
+[User guide](docs/USAGE.md) · [Known limitations](docs/KNOWN_LIMITATIONS.md) · [Roadmap](https://github.com/joshdaws/omnishot/issues/13) · [Issues](https://github.com/joshdaws/omnishot/issues) · [Contributing](CONTRIBUTING.md)
 
 ## What it does
 
