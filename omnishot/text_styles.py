@@ -15,8 +15,11 @@ def family(style):
         for path in (Path(__file__).parent/'data/fonts').glob('*.ttf'):QFontDatabase.addApplicationFont(str(path))
         _registered=True
     if style in ('Rounded','Rounded Boxed'):return 'Nunito'
-    if style in ('Monospaced','Monospaced Boxed'):return 'Adwaita Mono'
-    return 'Adwaita Sans'
+    mono=style in ('Monospaced','Monospaced Boxed')
+    preferred='Adwaita Mono' if mono else 'Adwaita Sans'
+    if preferred in QFontDatabase.families():return preferred
+    role=QFontDatabase.SystemFont.FixedFont if mono else QFontDatabase.SystemFont.GeneralFont
+    return QFontDatabase.systemFont(role).family()
 
 
 def font_for(props):

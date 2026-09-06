@@ -1,3 +1,5 @@
+import pytest
+pytestmark = pytest.mark.usefixtures('no_compositor')
 from PySide6.QtCore import Qt,QPoint,QPointF
 from PySide6.QtGui import QWheelEvent,QImage,QColor
 from PySide6.QtWidgets import QApplication

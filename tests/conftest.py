@@ -13,3 +13,9 @@ def native_capture_files(tmp_path, monkeypatch):
         (directory / name).write_bytes(b'unit-test placeholder; never loaded')
     monkeypatch.setattr(clean_capture, 'NATIVE', directory)
     return directory
+
+
+@pytest.fixture
+def no_compositor(monkeypatch):
+    from omnishot import backend
+    monkeypatch.setattr(backend, 'hypr', lambda query: [])
