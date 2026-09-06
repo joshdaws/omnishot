@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omnishot"
+version = "0.2.0"
+description = "Local-first capture and annotation for Omarchy and Hyprland"
+requires-python = ">=3.11"
+dependencies = ["PySide6>=6.8,<7", "opencv-python-headless>=4.10,<6", "Pillow>=11,<13", "pillow-heif>=1,<2"]
+
+[project.scripts]
+omnishot = "omnishot.app:main"
+
+[tool.setuptools]
+packages = ["omnishot"]
+
+[tool.setuptools.package-data]
+omnishot = ["data/*.txt", "data/fonts/*.ttf", "data/fonts/*.txt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

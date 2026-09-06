@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-omnishot">
+    <comment>OmniShot editable image</comment>
+    <glob pattern="*.omnishot"/>
+    <icon name="camera-photo"/>
+  </mime-type>
+  <mime-type type="application/x-omnishot-video">
+    <comment>OmniShot editable video</comment>
+    <glob pattern="*.omnishot-video"/>
+    <icon name="camera-video"/>
+  </mime-type>
+</mime-info>

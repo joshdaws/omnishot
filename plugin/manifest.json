@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "local.omnishot",
+  "name": "OmniShot",
+  "version": "0.2.0",
+  "author": "Local",
+  "license": "MIT",
+  "description": "Native screenshots, scrolling capture, annotation, recording and capture history.",
+  "kinds": ["bar-widget"],
+  "entryPoints": {"barWidget": "BarWidget.qml"},
+  "barWidget": {"displayName": "OmniShot", "description": "Capture and annotate", "category": "Utilities", "allowMultiple": false, "defaultSection": "right"}
+}

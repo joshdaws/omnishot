@@ -1,0 +1,6 @@
+Nunito variable regular and italic, unmodified.
+Source: https://github.com/google/fonts/tree/main/ofl/nunito
+Retrieved: 2026-09-06
+License: SIL Open Font License 1.1; see OFL.txt.
+Nunito[wght].ttf SHA-256: bb55a5ca5c2042335b3991af27c4d0705d0ef41cac6164ac737fd8f2a1e85207
+Nunito-Italic[wght].ttf SHA-256: b520cc871868b0acfca1beda875df7f4a44ebce914f8a89f83977fc9c09529c8
