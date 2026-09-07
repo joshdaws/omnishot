@@ -52,7 +52,7 @@ Run these commands as your normal desktop user in a terminal inside an unlocked,
 omarchy pkg add git python python-pip gcc pkgconf wayland wayland-protocols \
   cairo libxkbcommon libglvnd lua54 grim slurp wl-clipboard ffmpeg \
   tesseract tesseract-data-eng tesseract-data-osd gpu-screen-recorder libpulse \
-  desktop-file-utils shared-mime-info xdg-utils
+  desktop-file-utils shared-mime-info xdg-utils libnotify
 
 mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}"
 git clone https://github.com/joshdaws/omnishot.git "${XDG_DATA_HOME:-$HOME/.local/share}/omnishot-app"
@@ -70,6 +70,14 @@ The installer adds user-owned launchers, file associations, a bar widget, and Hy
 The launcher is `~/.local/bin/omnishot`. The companion widget lives in `$XDG_CONFIG_HOME/omarchy/plugins/local.omnishot` (normally `~/.config/omarchy/plugins/local.omnishot`); desktop and MIME entries use `$XDG_DATA_HOME` (normally `~/.local/share`). Capture history is separate from the checkout. The widget uses Omarchy's shell API, and the application reads the active Omarchy theme automatically.
 
 The installer validates the plugin manifest, builds the native helpers, reloads Hyprland and checks for configuration errors. Verify the widget with `omarchy plugin list` and try **Ctrl+Print** followed by clicking the capture preview. If you change widget placement later, reinstalling preserves it. Changed widget code may restart the shell; layout-only changes hot-reload.
+
+## Bar popup
+
+Click the OmniShot camera icon to open a panel anchored to the bar, following the same Omarchy UI as Display and Tailscale. Click the icon again, click outside, or press **Esc** to dismiss it. Use arrows or **h/j/k/l** to select an action, **Enter** to run it, and **Tab** to switch to a neighboring bar panel. **Print** and `omnishot menu` open this same panel on the focused display.
+
+During recording, the icon shows recording status and the panel includes **Stop** and **Pause/Resume**. The separate system-tray icon is hidden while the bar panel is available; if the widget is removed or the shell is unavailable, OmniShot falls back to its tray icon and standalone capture menu. Captures, annotation, and recording controls remain in the desktop app.
+
+The integration uses Omarchy's shared `Panel`, `KeyboardPanel`, `PanelKeyCatcher`, and `Button` components. References: [Omarchy shell](https://github.com/basecamp/omarchy/tree/quattro/shell) (Display/Tailscale) and [Workspace Layout](https://github.com/bjarneo/omarchy-workspace-layout).
 
 ## Capture → annotate
 

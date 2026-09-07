@@ -34,7 +34,7 @@ omnishot_install() (
   omarchy pkg add git python python-pip gcc pkgconf wayland wayland-protocols \
     cairo libxkbcommon libglvnd lua54 grim slurp wl-clipboard ffmpeg \
     tesseract tesseract-data-eng tesseract-data-osd gpu-screen-recorder libpulse \
-    desktop-file-utils shared-mime-info xdg-utils
+    desktop-file-utils shared-mime-info xdg-utils libnotify
   mkdir -p -- "$(dirname -- "$task_root")"
   GIT_TERMINAL_PROMPT=0 git clone --branch main --single-branch -- https://github.com/joshdaws/omnishot.git "$task_root"
   (cd -- "$task_root" && bash install.sh)

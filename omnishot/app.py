@@ -12,7 +12,7 @@ import sys
 import time
 import numpy as np
 from PIL import Image
-from PySide6.QtCore import Qt,QTimer,QUrl
+from PySide6.QtCore import Qt,QTimer,QUrl,QProcess
 from PySide6.QtGui import QIcon,QPixmap,QPainter,QColor,QFont,QImage,QKeySequence,QShortcut
 from PySide6.QtWidgets import (QApplication,QWidget,QVBoxLayout,QHBoxLayout,QLabel,
     QFileDialog,QSystemTrayIcon,QMenu,QMessageBox)
@@ -43,7 +43,10 @@ class Controller:
         self.menu.addSeparator();self.menu.addAction("Hide/show pinned images",self.toggle_pins);self.menu.addAction("Unlock pinned images",self.unlock_pins)
         self.menu.addAction("Close all pinned images",self.close_pins)
         self.menu.addAction("Quit OmniShot",self.request_quit);self.tray.setContextMenu(self.menu)
-        self.tray.activated.connect(lambda reason:self.show_menu() if reason==QSystemTrayIcon.ActivationReason.Trigger else None);self.tray.show()
+        self.tray.activated.connect(lambda reason:self.show_menu() if reason==QSystemTrayIcon.ActivationReason.Trigger else None)
+        self.shell_probe_pending=False;self.shell_available=False
+        self.shell_timer=QTimer(self.app);self.shell_timer.setInterval(10000);self.shell_timer.timeout.connect(self.refresh_shell_panel);self.shell_timer.start()
+        self.refresh_shell_panel()
         self.app.aboutToQuit.connect(self.cleanup)
         interrupted=list(self.store.captures.glob("*.recording.json"))+list(self.store.captures.glob("*.discarding.json"))
         if interrupted:QTimer.singleShot(500,lambda:self.recover_interrupted(interrupted))
@@ -117,6 +120,7 @@ class Controller:
             elif command=="close-all":self.close_all_overlays()
             elif command=="toggle-pins":self.toggle_pins()
             elif command=="close-pins":self.close_pins()
+            elif command=="unlock-pins":self.unlock_pins()
             elif command=="settings":
                 if args.get("tab")=="cloud":raise ValueError("Cloud services are excluded from OmniShot. Captures stay on your device.")
                 settings=Settings(self.store,args.get("tab","general"));settings.accepted.connect(self.apply_theme);settings.accepted.connect(lambda:[pin.refresh_appearance() for pin in self.pins]);settings.accepted.connect(lambda:[window.apply_annotation_shortcuts() for window in self.windows if isinstance(window,Editor)]);self.retain(settings)
@@ -142,7 +146,23 @@ class Controller:
             else:raise ValueError(f"Unknown OmniShot command: {command}")
         except Exception as exc:error(None,exc)
 
+    def refresh_shell_panel(self):
+        if self.shell_probe_pending:return
+        from .shell_panel import available
+        self.shell_probe_pending=True
+        def done(present):
+            self.shell_probe_pending=False;self.shell_available=present;self.tray.setVisible(not present)
+        background(available,done,lambda _:done(False))
+
+    def notify(self,title,message):
+        started,_=QProcess.startDetached("notify-send",["--app-name=OmniShot",title,str(message)])
+        if not started:self.tray.showMessage(title,str(message))
+
     def show_menu(self):
+        from .shell_panel import show
+        background(show,lambda shown:None if shown else self.show_standalone_menu(),lambda _:self.show_standalone_menu())
+
+    def show_standalone_menu(self):
         win=QWidget();win.setWindowTitle("OmniShot — Capture");win.setFixedWidth(540)
         escape=QShortcut(QKeySequence("Escape"),win,activated=win.close)
         escape.setContext(Qt.ShortcutContext.WindowShortcut)
@@ -162,7 +182,7 @@ class Controller:
 
     def capture(self,mode,args):
         if self.busy:return
-        if self.panel and not self.panel.closed:self.tray.showMessage("OmniShot","Finish or cancel the scrolling capture first.");return
+        if self.panel and not self.panel.closed:self.notify("OmniShot","Finish or cancel the scrolling capture first.");return
         rect=backend.parse_geometry(args["geometry"]) if args.get("geometry") else None
         delay=float(args.get("delay",self.store.settings["delay"] if mode=="timer" else 0))
         if not 0<=delay<=86400:raise ValueError("Capture delay must be between 0 and 86400 seconds")
@@ -203,7 +223,11 @@ class Controller:
                     if args.get("start"):QTimer.singleShot(250,panel.start)
                 else:self.finished_capture(frame,action,ocr=mode=="ocr",linebreaks=args.get("linebreaks"),pixel_ratio=frame.shape[1]/selected[2] if selected else capture_scale.get("ratio"),skip_background=bool(capture_modifiers["mask"]&1),force_copy=bool(capture_modifiers["mask"]&4),name_context=name_context)
             background(work,done,fail)
-        QTimer.singleShot(180 if mode=="timer" else int(delay*1000)+180,execute)
+        def begin(_=None):QTimer.singleShot(180 if mode=="timer" else int(delay*1000)+180,execute)
+        if getattr(self,"shell_available",False):
+            from .shell_panel import call
+            background(lambda:call("shell","hide","local.omnishot"),begin,begin)
+        else:begin()
 
     def window_selection(self,action,name_context=None):
         from .window_selection import WindowSelector
@@ -355,7 +379,7 @@ class Controller:
         def done(text):
             dialog=present(text,settings)
             if dialog and not dialog.copied:return
-            self.tray.showMessage("OmniShot","Recognized text copied to clipboard" if text else "No text or QR code found")
+            self.notify("OmniShot","Recognized text copied to clipboard" if text else "No text or QR code found")
         background(lambda:extract(path,settings["ocr_languages"],settings["ocr_linebreaks"] if linebreaks is None else linebreaks),done,lambda msg:error(None,msg))
 
     def choose_capture_name(self,path):
@@ -422,7 +446,7 @@ class Controller:
             if self.last_closed==str(path):self.last_closed=None
             message="Capture and editable project moved to Trash"
             if result.get('kept_saved_files'):message+=". Saved files changed outside OmniShot were kept."
-            self.tray.showMessage("OmniShot",message)
+            self.notify("OmniShot",message)
         def fail(message):
             for overlay in affected:overlay.show()
             error(None,message)
@@ -465,7 +489,7 @@ class Controller:
                     if overlay.path not in saved:overlay.export_to(folder);saved.add(overlay.path)
                     overlay.close()
                 except Exception as exc:error(None,exc);break
-            if saved:self.tray.showMessage("OmniShot",f"Saved {len(saved)} captures")
+            if saved:self.notify("OmniShot",f"Saved {len(saved)} captures")
         finally:
             self.saving_overlays=False
             for overlay in overlays:
@@ -535,9 +559,9 @@ class Controller:
         if self.busy:return
         from .recording import RecordSetup,Recorder
         if self.panel and not self.panel.closed:
-            self.tray.showMessage("OmniShot","Finish or cancel the scrolling capture first.");return
+            self.notify("OmniShot","Finish or cancel the scrolling capture first.");return
         if self.recorder:
-            self.restore_capture_windows();self.tray.showMessage("OmniShot","A recording is already active. Use Stop or Pause from the tray menu.");return
+            self.restore_capture_windows();self.notify("OmniShot","A recording is already active. Use Stop or Pause from the OmniShot menu.");return
         setup=RecordSetup(self.store)
         if setup.exec():
             opts=setup.options();self.hide_capture_windows()
@@ -587,7 +611,7 @@ class Controller:
         from .recording import VideoEditor
         if self.selectors:self.cancel_selection();self.restore_capture_windows()
         if self.busy:
-            self.tray.showMessage("OmniShot","Finish or cancel the current capture before quitting.");return False
+            self.notify("OmniShot","Finish or cancel the current capture before quitting.");return False
         self.quit_after_recording=False
         for window in list(self.windows):
             if isValid(window) and isinstance(window,(Editor,VideoEditor)) and not window.close():return False

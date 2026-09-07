@@ -9,7 +9,7 @@ if (( EUID == 0 )); then
 fi
 # Fail before changing user configuration when prerequisites are missing.
 task_missing=()
-for task_command in python gcc c++ pkg-config wayland-scanner hyprctl omarchy omarchy-shell grim slurp wl-copy ffmpeg ffprobe tesseract gpu-screen-recorder parec update-desktop-database update-mime-database xdg-mime; do
+for task_command in python gcc c++ pkg-config wayland-scanner hyprctl omarchy omarchy-shell grim slurp wl-copy ffmpeg ffprobe tesseract gpu-screen-recorder parec update-desktop-database update-mime-database xdg-mime notify-send; do
   command -v "$task_command" >/dev/null 2>&1 || task_missing+=("$task_command")
 done
 if (( ${#task_missing[@]} )); then
