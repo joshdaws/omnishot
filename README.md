@@ -6,6 +6,8 @@ Screen capture, scrolling screenshots, annotation, and screen recording for Omar
 
 [User guide](docs/USAGE.md) · [Known limitations](docs/KNOWN_LIMITATIONS.md) · [Roadmap](https://github.com/joshdaws/omnishot/issues/13) · [Issues](https://github.com/joshdaws/omnishot/issues) · [Contributing](CONTRIBUTING.md)
 
+[Watch the 45-second launch video](https://github.com/joshdaws/omnishot/releases/download/v0.2.0/omnishot-launch.mp4) · [Download the community preview](https://github.com/joshdaws/omnishot/releases/tag/v0.2.0)
+
 ## What it does
 
 - Area, window, display, full-desktop, timed, and previous-area screenshots.
