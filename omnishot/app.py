@@ -13,7 +13,7 @@ import time
 import numpy as np
 from PIL import Image
 from PySide6.QtCore import Qt,QTimer,QUrl
-from PySide6.QtGui import QIcon,QPixmap,QPainter,QColor,QFont,QImage
+from PySide6.QtGui import QIcon,QPixmap,QPainter,QColor,QFont,QImage,QKeySequence,QShortcut
 from PySide6.QtWidgets import (QApplication,QWidget,QVBoxLayout,QHBoxLayout,QLabel,
     QFileDialog,QSystemTrayIcon,QMenu,QMessageBox)
 from PySide6.QtNetwork import QLocalServer,QLocalSocket
@@ -144,6 +144,8 @@ class Controller:
 
     def show_menu(self):
         win=QWidget();win.setWindowTitle("OmniShot — Capture");win.setFixedWidth(540)
+        escape=QShortcut(QKeySequence("Escape"),win,activated=win.close)
+        escape.setContext(Qt.ShortcutContext.WindowShortcut)
         layout=QVBoxLayout(win);layout.setContentsMargins(24,24,24,24)
         title=QLabel("Capture. Make it clear.");title.setStyleSheet("font-size:24px;font-weight:600");layout.addWidget(title)
         subtitle=QLabel("Select an area, annotate it, and put it to work.");subtitle.setObjectName("muted");layout.addWidget(subtitle)
