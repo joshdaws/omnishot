@@ -4,15 +4,21 @@ import os
 from pathlib import Path
 import shutil
 import shlex
-import time
+from datetime import datetime
 import subprocess
 
 source=Path(os.environ["OMNISHOT_SOURCE"]).resolve()
-python=Path(os.environ["OMNISHOT_PYTHON"]).resolve()
 # Do not resolve the interpreter symlink: invoking the venv path is essential.
 python=Path(os.environ["OMNISHOT_PYTHON"])
 home=Path.home();config=Path(os.environ.get("XDG_CONFIG_HOME",home/".config"))
-stamp=time.strftime("%Y%m%d-%H%M%S")
+data_home=Path(os.environ.get("XDG_DATA_HOME",home/".local/share"))
+# Validate inputs before writing launchers or changing desktop configuration.
+shell=config/"omarchy/shell.json"
+data=json.loads(shell.read_text())
+manifest=json.loads((source/"plugin/manifest.json").read_text())
+bindings=config/"hypr/bindings.lua";old=bindings.read_text()
+hypr=config/"hypr/hyprland.lua";hypr_text=hypr.read_text()
+stamp=datetime.now().strftime("%Y%m%d-%H%M%S-%f")
 backup=source/"backups"/stamp;backup.mkdir(parents=True,exist_ok=True)
 
 def preserve(path):
@@ -21,8 +27,8 @@ def preserve(path):
 bin_dir=home/".local/bin";bin_dir.mkdir(parents=True,exist_ok=True)
 launcher=bin_dir/"omnishot";preserve(launcher)
 launcher.write_text("#!/bin/sh\nexport OMNISHOT_PREVIOUS_PRELOAD=\"${LD_PRELOAD-}\"\nexport LD_PRELOAD="+shlex.quote(str(source/"native/drag-status.so"))+"\"${LD_PRELOAD:+:$LD_PRELOAD}\"\nexec "+shlex.quote(str(python))+" -m omnishot.app \"$@\"\n");launcher.chmod(0o755)
-applications=home/".local/share/applications";applications.mkdir(parents=True,exist_ok=True)
-mime_dir=home/".local/share/mime";mime_packages=mime_dir/"packages";mime_packages.mkdir(parents=True,exist_ok=True)
+applications=data_home/"applications";applications.mkdir(parents=True,exist_ok=True)
+mime_dir=data_home/"mime";mime_packages=mime_dir/"packages";mime_packages.mkdir(parents=True,exist_ok=True)
 preserve(mime_packages/"omnishot.xml");shutil.copy2(source/"packaging/omnishot.xml",mime_packages/"omnishot.xml")
 desktop=applications/"org.omarchy.OmniShot.desktop";preserve(desktop)
 desktop.write_text('[Desktop Entry]\nType=Application\nName=OmniShot\nComment=Capture, scroll, annotate and record\nExec="'+str(launcher)+'" %u\nIcon=camera-photo\nTerminal=false\nCategories=Graphics;Utility;\nMimeType=image/png;image/jpeg;image/webp;image/heic;image/heif;image/gif;video/mp4;video/webm;video/quicktime;video/x-matroska;application/x-omnishot;application/x-omnishot-video;x-scheme-handler/omnishot;\nActions=Capture;Scroll;History;\n\n[Desktop Action Capture]\nName=Capture\nExec="'+str(launcher)+'" menu\n\n[Desktop Action Scroll]\nName=Scrolling Capture\nExec="'+str(launcher)+'" scroll\n\n[Desktop Action History]\nName=Capture History\nExec="'+str(launcher)+'" history\n')
@@ -33,16 +39,15 @@ widget_changed=not installed_widget.exists() or installed_widget.read_bytes()!=w
 if (plugin/"manifest.json").exists():
     widget_changed=widget_changed or json.loads((plugin/"manifest.json").read_text()).get("entryPoints",{}).get("barWidget")!="BarWidget.qml"
 preserve(installed_widget);installed_widget.write_bytes(widget)
-manifest=json.loads((source/"plugin/manifest.json").read_text())
 preserve(plugin/"manifest.json");(plugin/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
-shell=config/"omarchy/shell.json";preserve(shell);data=json.loads(shell.read_text())
-layout=data.setdefault("bar",{}).setdefault("layout",{}).setdefault("right",[])
-if not any(v.get("id")=="local.omnishot" for v in layout):layout.insert(0,{"id":"local.omnishot"})
+preserve(shell)
+layout=data.setdefault("bar",{}).setdefault("layout",{})
+if not any(v.get("id")=="local.omnishot" for section in ("left","center","right") for v in layout.get(section,[])):
+    layout.setdefault("right",[]).insert(0,{"id":"local.omnishot"})
 shell_text=json.dumps(data,indent=2)+"\n"
 if shell.read_text()!=shell_text:shell.write_text(shell_text)
-bindings=config/"hypr/bindings.lua";preserve(bindings)
+preserve(bindings)
 marker="-- OmniShot managed bindings"
-old=bindings.read_text()
 if marker not in old:
     with bindings.open("a") as f:
         f.write('\n'+marker+'\n')
@@ -64,8 +69,8 @@ o.window({ title = "^OmniShot Scrolling Selection$", class = "^(omnishot|org\\\\
 o.window({ title = "^OmniShot (Window )?Selection.*$", class = "^(omnishot|org\\\\.omarchy\\\\.OmniShot)$" }, { no_initial_focus = true, no_blur = true, no_shadow = true, border_size = 0, rounding = 0 })
 '''
 if not rules.exists() or rules.read_text()!=rules_text:rules.write_text(rules_text)
-hypr=config/"hypr/hyprland.lua";preserve(hypr)
-if 'require("hypr.omnishot")' not in hypr.read_text():
+preserve(hypr)
+if 'require("hypr.omnishot")' not in hypr_text:
     with hypr.open("a") as f:f.write('\n-- OmniShot capture and annotation windows.\nrequire("hypr.omnishot")\n')
 print(f"Installed OmniShot. Configuration backups: {backup}")
 

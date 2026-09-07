@@ -291,13 +291,21 @@ spanning displays currently use hidden or outside-region controls.
 
 ## Install / update
 
-Requires Python with venv support, `grim`, `slurp`, `wl-clipboard`, `hyprctl`,
-`ffmpeg`, `tesseract`, `gpu-screen-recorder`, GCC, `pkg-config`, `wayland-scanner`,
-Wayland development files, Hyprland headers, Lua 5.4 headers and EGL/GLES headers. These system tools are present on the target
-Omarchy installation. Python dependencies are isolated in `.venv`.
+Follow the [installation instructions](../README.md#install) for supported
+versions, the complete package list, and first-time setup in `~/projects/omnishot`.
+OmniShot is a desktop application with a companion shell widget; `omarchy plugin
+add` alone cannot install its Python environment and native helpers. Python
+dependencies are isolated in the checkout's `.venv`.
+
+Run the installer as your desktop user, without sudo, inside an unlocked Omarchy
+session. For an update, finish capture/recording and save/close editable windows first:
 
 ```sh
+omnishot quit
+cd ~/projects/omnishot
+git pull --ff-only
 bash install.sh
+omnishot menu
 ```
 
 The installer adds a launcher, desktop entry, shell bar widget and user-owned
@@ -317,8 +325,8 @@ Re-run the installer after compositor upgrades; restart the session if the runni
 compositor and installed headers differ. It activates only during recording and
 automatically deactivates if the recording application exits.
 
-After an update, quit OmniShot from its tray menu and reopen it to load changed
-Python modules. Captures and editable projects remain in history.
+The application's installer also updates the widget; `omarchy plugin update`
+does not update this checkout. Captures and editable projects remain in history.
 
 The source checkout and `.venv` must remain at their installed location.
 User captures, history, settings and editable exports live under
