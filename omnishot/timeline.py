@@ -1,4 +1,5 @@
 """Zoomable, scrolling source-time tracks shared by Studio preview and export."""
+from . import ui_scale as ui
 import copy,math,time
 from PySide6.QtCore import Qt, Signal, QRectF, QSignalBlocker,QTimer
 from PySide6.QtGui import QImage
@@ -27,18 +28,18 @@ class Timeline(QWidget,ZoomActions):
     cut_mode_changed=Signal(bool)
     selection_changed=Signal()
     source_changed=Signal(QImage)
-    ZOOM_Y=32
-    VIDEO_Y=64
-    VIDEO_HEIGHT=48
+    ZOOM_Y=property(lambda self:ui.px(32))
+    VIDEO_Y=property(lambda self:ui.px(64))
+    VIDEO_HEIGHT=property(lambda self:ui.px(48))
 
     def __init__(self,parent=None):
         super().__init__(parent);self.duration=0.;self.position=0.;self.start=0.;self.end=0.;self.fps=30.
         self.zooms=[];self.cuts=[];self.splits=[];self.cut_mode=False;self.selected=None;self.drag=None;self.before=None;self.last_pointer=None
         self.source_image=QImage();self.focus_editor=None;self.thumbnails=None;self.zoom_level=0;self.playing=False;self.internal_scroll=False;self.manual_scroll_until=0.
         self.scroll=QScrollBar(Qt.Orientation.Horizontal,self);self.scroll.setAccessibleName('Timeline horizontal scroll');self.scroll.setFocusPolicy(Qt.FocusPolicy.StrongFocus);self.scroll.valueChanged.connect(self.scrolled)
-        self.scroll.setStyleSheet(SCROLLBAR_STYLE)
+        ui.set(self.scroll,"setStyleSheet",SCROLLBAR_STYLE)
         self.auto_scroll=QTimer(self);self.auto_scroll.setInterval(40);self.auto_scroll.timeout.connect(self.drag_scroll)
-        self.setFixedHeight(136);self.setMouseTracking(True);self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        ui.set(self,"setFixedHeight",136);self.setMouseTracking(True);self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setToolTip('B selects the cut tool; Ctrl+B splits at the playhead. Select a clip and drag its edges to trim or restore frames. Escape cancels a drag or returns to selection. Ctrl+wheel zooms; wheel scrolls. Delete removes a selected clip or zoom, or restores a cut.')
 
     def clips(self):
@@ -89,7 +90,7 @@ class Timeline(QWidget,ZoomActions):
         if self.focus_editor:self.focus_editor.set_image(image)
         self.update()
 
-    def plot_rect(self):return QRectF(16,0,max(1,self.width()-32),120)
+    def plot_rect(self):return QRectF(ui.px(16),0,max(1,self.width()-ui.px(32)),ui.px(120))
     def offset(self):return self.scroll.value()/1000
     def max_zoom(self):return max(1.,self.duration*self.fps*8/self.plot_rect().width())
     def factor(self):return self.max_zoom()**(self.zoom_level/100)
@@ -114,7 +115,7 @@ class Timeline(QWidget,ZoomActions):
         if not self.internal_scroll:self.manual_scroll_until=time.monotonic()+2
         self.update()
     def resizeEvent(self,event):
-        super().resizeEvent(event);self.scroll.setGeometry(12,122,max(1,self.width()-24),12);self.update_scroll();self.update()
+        super().resizeEvent(event);self.scroll.setGeometry(ui.px(12),ui.px(122),max(1,self.width()-ui.px(24)),ui.px(12));self.update_scroll();self.update()
 
     def set_frame_rate(self,fps):
         if fps and float(fps)>0:self.fps=float(fps);self.update_scroll();self.update()
@@ -148,7 +149,7 @@ class Timeline(QWidget,ZoomActions):
         return self.cuts[index]
 
     def clip_rect(self,kind,index=0):
-        a,b=self.bounds(kind,index);y=self.ZOOM_Y if kind=='zoom' else self.VIDEO_Y;height=24 if kind=='zoom' else self.VIDEO_HEIGHT
+        a,b=self.bounds(kind,index);y=self.ZOOM_Y if kind=='zoom' else self.VIDEO_Y;height=ui.px(24) if kind=='zoom' else self.VIDEO_HEIGHT
         return QRectF(self.x(a),y,max(2,self.x(b)-self.x(a)),height)
 
     def paintEvent(self,event):
@@ -180,7 +181,7 @@ class Timeline(QWidget,ZoomActions):
         self.setFocus();point=event.position();self.drag=None;self.before=(self.start,self.end,copy.deepcopy(self.zooms),copy.deepcopy(self.cuts));found=self.hit(point)
         if self.cut_mode and self.VIDEO_Y<=point.y()<=self.VIDEO_Y+self.VIDEO_HEIGHT:
             self.split_at(self.time_at(point.x()));self.before=None;return
-        if not found and self.ZOOM_Y<=point.y()<=self.ZOOM_Y+24:
+        if not found and self.ZOOM_Y<=point.y()<=self.ZOOM_Y+ui.px(24):
             gap=self.zoom_gap(self.time_at(point.x()))
             index=self.add_zoom_at(self.time_at(point.x()))
             if index is not None:

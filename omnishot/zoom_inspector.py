@@ -1,4 +1,5 @@
 """The selected zoom's inline level, tracking and manual framing controls."""
+from . import ui_scale as ui
 from PySide6.QtCore import Qt,QSignalBlocker
 from PySide6.QtWidgets import QWidget,QScrollArea,QLayout,QVBoxLayout,QHBoxLayout,QLabel,QSlider,QSpinBox,QToolButton,QButtonGroup
 from .zoom_focus import ZoomFocus
@@ -10,19 +11,19 @@ class ZoomInspector(QScrollArea):
         super().__init__();self.editor=editor;self.timeline=editor.timeline;self.previous_page=0
         self.setWidgetResizable(True);self.setFrameShape(QScrollArea.Shape.NoFrame)
         from .timeline import SCROLLBAR_STYLE
-        self.setStyleSheet(SCROLLBAR_STYLE)
+        ui.set(self,"setStyleSheet",SCROLLBAR_STYLE)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         page=QWidget();self.setWidget(page)
-        box=QVBoxLayout(page);box.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize);box.setContentsMargins(14,8,14,12);box.setSpacing(12)
-        heading=QHBoxLayout();heading.addWidget(QLabel('Zoom level'));self.level_value=QSpinBox();self.level_value.setRange(100,500);self.level_value.setSuffix('%');self.level_value.setFixedWidth(82);self.level_value.setAccessibleName('Zoom level percent');heading.addWidget(self.level_value);box.addLayout(heading)
+        box=QVBoxLayout(page);box.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize);ui.set(box,"setContentsMargins",14,8,14,12);ui.set(box,"setSpacing",12)
+        heading=QHBoxLayout();heading.addWidget(QLabel('Zoom level'));self.level_value=QSpinBox();self.level_value.setRange(100,500);self.level_value.setSuffix('%');ui.set(self.level_value,"setFixedWidth",82);self.level_value.setAccessibleName('Zoom level percent');heading.addWidget(self.level_value);box.addLayout(heading)
         self.level=QSlider(Qt.Orientation.Horizontal);self.level.setRange(100,500);self.level.setAccessibleName('Zoom level');box.addWidget(self.level)
         self.apply_all=button('Apply Zoom Level to All',self.timeline.apply_zoom_level_to_all);box.addWidget(self.apply_all)
         box.addSpacing(12);box.addWidget(QLabel('Zoom mode'));row=QHBoxLayout();self.mode_group=QButtonGroup(self);self.modes={}
         for label,follow in [('Follow Cursor',True),('Manual',False)]:
-            control=QToolButton();control.setText(label);control.setCheckable(True);control.setMinimumHeight(32);self.mode_group.addButton(control);self.modes[follow]=control;row.addWidget(control,1)
+            control=QToolButton();control.setText(label);control.setCheckable(True);ui.set(control,"setMinimumHeight",32);self.mode_group.addButton(control);self.modes[follow]=control;row.addWidget(control,1)
             control.clicked.connect(lambda checked=False,v=follow:self.timeline.change_zoom(follow=v))
         box.addLayout(row)
-        self.focus=ZoomFocus();self.focus.setMinimumSize(0,140);self.focus.setFixedHeight(170);box.addWidget(self.focus)
+        self.focus=ZoomFocus();ui.set(self.focus,"setMinimumSize",0,140);ui.set(self.focus,"setFixedHeight",170);box.addWidget(self.focus)
         box.addSpacing(12);box.addWidget(QLabel('Animation'))
         self.animation=button('Animation Settings',lambda:editor.tool_buttons['Motion'].click());box.addWidget(self.animation);box.addStretch()
         self.level.valueChanged.connect(self.set_level);self.level_value.valueChanged.connect(self.set_level)

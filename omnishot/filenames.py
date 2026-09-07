@@ -1,4 +1,5 @@
 """Capture filename tokens and the local customization dialog."""
+from . import ui_scale as ui
 from datetime import datetime,timezone
 import re
 import uuid
@@ -32,11 +33,11 @@ def customize(settings,parent=None):
     from PySide6.QtCore import Qt,QMimeData
     from PySide6.QtGui import QDrag
     from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QLabel,QLineEdit,QGridLayout,QPushButton,QCheckBox,QDialogButtonBox
-    dialog=QDialog(parent);dialog.setWindowTitle("OmniShot — File Name Format");dialog.resize(650,530);layout=QVBoxLayout(dialog)
+    dialog=QDialog(parent);dialog.setWindowTitle("OmniShot — File Name Format");ui.set(dialog,"resize",650,530);layout=QVBoxLayout(dialog)
     label=QLabel("Type text and click or drag tokens to create a custom filename.");label.setWordWrap(True);layout.addWidget(label)
     pattern=QLineEdit(settings.get("filename_format",DEFAULT_FORMAT));pattern.setObjectName("filenameFormat");pattern.setMaxLength(512);layout.addWidget(pattern)
     preview=QLabel();preview.setObjectName("filenamePreview");preview.setTextFormat(Qt.TextFormat.PlainText);preview.setWordWrap(True);layout.addWidget(preview)
-    grid=QGridLayout();layout.addLayout(grid);grid.setHorizontalSpacing(20)
+    grid=QGridLayout();layout.addLayout(grid);ui.set(grid,"setHorizontalSpacing",20)
     class Token(QPushButton):
         def mousePressEvent(self,event):self.origin=event.position().toPoint();super().mousePressEvent(event)
         def mouseMoveEvent(self,event):

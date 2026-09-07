@@ -1,4 +1,5 @@
 """Annotation tool groups and direct manipulation of the rendered capture."""
+from . import ui_scale as ui
 from PySide6.QtCore import Qt,QRectF,QPointF,QSize
 from PySide6.QtGui import QIcon,QIconEngine,QPainter,QPen,QPolygonF,QPixmap,QAction
 from PySide6.QtWidgets import QToolBar,QToolButton,QPushButton,QMenu,QWidget,QSizePolicy,QApplication
@@ -106,7 +107,7 @@ class DragHandle(QPushButton):
     def __init__(self,editor):
         super().__init__('⋮  Drag Me  ⋮');self.editor=editor;self.origin=None
         self.setAccessibleName('Drag Me');self.setToolTip('Drag the annotated image into another app. Hold Alt to keep the editor open.')
-        self.setCursor(Qt.CursorShape.OpenHandCursor);self.setFixedWidth(132);self.setStyleSheet('QPushButton { border-radius:14px; padding:4px 12px; }')
+        self.setCursor(Qt.CursorShape.OpenHandCursor);ui.set(self,"setFixedWidth",132);ui.set(self,"setStyleSheet",'QPushButton { border-radius:14px; padding:4px 12px; }')
     def mousePressEvent(self,event):
         self.origin=event.position().toPoint() if event.button()==Qt.MouseButton.LeftButton else None
         super().mousePressEvent(event)
@@ -118,16 +119,16 @@ class DragHandle(QPushButton):
 
 
 def tools(editor):
-    e=editor;e.toolbar=QToolBar('Annotation tools');e.toolbar.setMovable(False);e.toolbar.setIconSize(QSize(20,20));e.addToolBar(e.toolbar)
-    e.toolbar.setStyleSheet('QToolBar { spacing:2px; padding:8px; } QToolButton { border:0; background:transparent; padding:5px; border-radius:12px; } QToolButton:hover { background:palette(light); } QToolButton:checked { background:palette(highlight); color:palette(highlighted-text); } QSpinBox { padding:3px; }')
+    e=editor;e.toolbar=QToolBar('Annotation tools');e.toolbar.setMovable(False);ui.set(e.toolbar,"setIconSize",QSize(20,20));e.addToolBar(e.toolbar)
+    ui.set(e.toolbar,"setStyleSheet",'QToolBar { spacing:2px; padding:8px; } QToolButton { border:0; background:transparent; padding:5px; border-radius:12px; } QToolButton:hover { background:palette(light); } QToolButton:checked { background:palette(highlight); color:palette(highlighted-text); } QSpinBox { padding:3px; }')
     e.tools={};crop=QAction(icon('crop'),'Crop',e);crop.setCheckable(True);crop.setToolTip('Crop (C)');crop.triggered.connect(lambda:e.set_tool('crop'));e.tools['crop']=crop;e.toolbar.addAction(crop)
     e.insert_action=e.toolbar.addAction(icon('insert'),'Insert image…',e.insert_dialog);e.background_action=e.toolbar.addAction(icon('background'),'Background…',e.background_dialog);e.toolbar.addSeparator()
     for key,label,shortcut in TOOLS:
         action=QAction(icon(key),label,e);action.setCheckable(True);action.setToolTip(f'{label} ({shortcut})');action.triggered.connect(lambda checked=False,k=key:e.set_tool(k));e.tools[key]=action
         if key=='highlight':action.setToolTip('Highlighter (H) · Hold Ctrl to bypass text snapping')
         if key=='pixelate':
-            e.hide_button=QToolButton();e.hide_button.setIconSize(QSize(20,20));e.hide_button.setMinimumWidth(42);e.hide_button.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
-            e.hide_button.setStyleSheet('QToolButton { padding-right:16px; } QToolButton::menu-button { width:14px; border:0; background:transparent; }')
+            e.hide_button=QToolButton();ui.set(e.hide_button,"setIconSize",QSize(20,20));ui.set(e.hide_button,"setMinimumWidth",42);e.hide_button.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+            ui.set(e.hide_button,"setStyleSheet",'QToolButton { padding-right:16px; } QToolButton::menu-button { width:14px; border:0; background:transparent; }')
             e.hide_menu=QMenu(e.hide_button);e.hide_button.setMenu(e.hide_menu);e.toolbar.addWidget(e.hide_button)
         if key not in HIDDEN_TOOLS:e.toolbar.addAction(action)
     for key in HIDDEN_TOOLS:e.hide_menu.addAction(e.tools[key])
@@ -135,16 +136,16 @@ def tools(editor):
 
 
 def finish(editor):
-    e=editor;spacer=QWidget();spacer.setStyleSheet('background:transparent');spacer.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Preferred);e.toolbar.addWidget(spacer)
+    e=editor;spacer=QWidget();ui.set(spacer,"setStyleSheet",'background:transparent');spacer.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Preferred);e.toolbar.addWidget(spacer)
     e.save_button=QPushButton('Save as…');e.save_button.setObjectName('primary');e.save_button.setToolTip('Save image (Ctrl+S). Hold Alt to save directly to your capture folder and keep editing.');e.save_button.clicked.connect(e.save_image);e.toolbar.addWidget(e.save_button)
     e.bottom_toolbar=QToolBar('View actions');e.bottom_toolbar.setMovable(False);e.addToolBar(Qt.ToolBarArea.BottomToolBarArea,e.bottom_toolbar)
-    bar=e.bottom_toolbar;container=QWidget();container.setStyleSheet('background:transparent');from PySide6.QtWidgets import QHBoxLayout
-    layout=QHBoxLayout(container);layout.setContentsMargins(0,0,0,0);left=QWidget();left_layout=QHBoxLayout(left);left_layout.setContentsMargins(0,0,0,0)
+    bar=e.bottom_toolbar;container=QWidget();ui.set(container,"setStyleSheet",'background:transparent');from PySide6.QtWidgets import QHBoxLayout
+    layout=QHBoxLayout(container);ui.set(layout,"setContentsMargins",0,0,0,0);left=QWidget();left_layout=QHBoxLayout(left);ui.set(left_layout,"setContentsMargins",0,0,0,0)
     e.zoom_button=QToolButton();e.zoom_button.setText('100%');e.zoom_button.setAccessibleName('Image zoom');e.zoom_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup);menu=QMenu(e.zoom_button)
     menu.addAction('Fit to Window',e.fit);menu.addSeparator()
     for percent in (25,50,100,200,400,800):menu.addAction(f'{percent}%',lambda checked=False,value=percent:e.zoom_to(value))
     e.zoom_button.setMenu(menu);left_layout.addWidget(e.zoom_button);left_layout.addStretch()
-    e.drag_handle=DragHandle(e);right=QWidget();right_layout=QHBoxLayout(right);right_layout.setContentsMargins(0,0,0,0);right_layout.addStretch()
+    e.drag_handle=DragHandle(e);right=QWidget();right_layout=QHBoxLayout(right);ui.set(right_layout,"setContentsMargins",0,0,0,0);right_layout.addStretch()
     e.operations_button=QToolButton();e.operations_button.setIcon(icon('more'));e.operations_button.setAccessibleName('Image actions');e.operations_button.setToolTip('Image actions');e.operations_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup);operations=QMenu(e.operations_button)
     for label,slot in [('Rotate clockwise',e.rotate),('Flip horizontally',e.flip),('Resize…',e.resize_image),('Combine images…',e.combine_dialog),('Text / QR',e.extract_text),('Print…',e.print_image)]:operations.addAction(label,slot)
     e.operations_button.setMenu(operations);right_layout.addWidget(e.operations_button)

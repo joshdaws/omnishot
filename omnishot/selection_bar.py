@@ -1,4 +1,5 @@
 """All-In-One mode buttons and exact dimensions, drawn with native Qt controls."""
+from . import ui_scale as ui
 from .theme import color as theme_color
 from PySide6.QtCore import Qt,QSize,QRectF,QPointF,QEvent
 from PySide6.QtGui import QIcon,QPixmap,QPainter,QPen,QColor,QFont
@@ -33,7 +34,7 @@ class SelectionBar(QWidget):
     def __init__(self,selector):
         super().__init__(selector);self.selector=selector;self.buttons={}
         self.setObjectName('selectionBar')
-        self.setStyleSheet('''
+        ui.set(self,"setStyleSheet",'''
             QWidget#selectionBar { background:transparent; }
             QWidget#selectionGroup { background:palette(window); border:1px solid palette(mid); border-radius:16px; }
             QToolButton { border:0; border-radius:10px; background:transparent; color:palette(window-text); padding:7px 4px; font-size:12px; }
@@ -43,11 +44,11 @@ class SelectionBar(QWidget):
             QLabel { background:transparent; color:palette(placeholder-text); }
             QComboBox { background:palette(window); border:0; padding:5px; color:palette(text); }
         ''')
-        self.layout=QBoxLayout(QBoxLayout.Direction.LeftToRight,self);self.layout.setContentsMargins(0,0,0,0);self.layout.setSpacing(12)
-        modes=QWidget();modes.setObjectName('selectionGroup');row=QHBoxLayout(modes);row.setContentsMargins(8,5,8,5);row.setSpacing(2)
+        self.layout=QBoxLayout(QBoxLayout.Direction.LeftToRight,self);ui.set(self.layout,"setContentsMargins",0,0,0,0);ui.set(self.layout,"setSpacing",12)
+        modes=QWidget();modes.setObjectName('selectionGroup');row=QHBoxLayout(modes);ui.set(row,"setContentsMargins",8,5,8,5);ui.set(row,"setSpacing",2)
         for label,kind in MODES:
-            b=QToolButton();b.setText(label);b.setIcon(mode_icon(label));b.setIconSize(QSize(24,24));b.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
-            b.setFixedSize(76,62);b.setCheckable(True);b.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            b=QToolButton();b.setText(label);b.setIcon(mode_icon(label));ui.set(b,"setIconSize",QSize(24,24));b.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
+            ui.set(b,"setFixedSize",76,62);b.setCheckable(True);b.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             b.setToolTip('Choose a window, then click to capture' if kind=='Window' else ('Capture this display' if kind=='Fullscreen' else f'{label} · use the selected area'))
             b.clicked.connect(lambda checked=False,k=kind:selector.choose_mode(k));row.addWidget(b);self.buttons[kind]=b
         scroll=self.buttons['Scrolling'];scroll.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -57,11 +58,11 @@ class SelectionBar(QWidget):
             menu.addAction('Horizontal scrolling',lambda:selector.choose_mode('Horizontal scrolling'))
             menu.exec(scroll.mapToGlobal(point))
         scroll.customContextMenuRequested.connect(scroll_menu);scroll.setToolTip('Scrolling capture · right-click for horizontal scrolling')
-        dimensions=QWidget();dimensions.setObjectName('selectionGroup');fields=QHBoxLayout(dimensions);fields.setContentsMargins(14,14,14,14);fields.setSpacing(7)
-        selector.width_box.setFixedWidth(77);selector.height_box.setFixedWidth(77)
+        dimensions=QWidget();dimensions.setObjectName('selectionGroup');fields=QHBoxLayout(dimensions);ui.set(fields,"setContentsMargins",14,14,14,14);ui.set(fields,"setSpacing",7)
+        ui.set(selector.width_box,"setFixedWidth",77);ui.set(selector.height_box,"setFixedWidth",77)
         selector.width_box.setToolTip('Width in screen points');selector.height_box.setToolTip('Height in screen points')
         fields.addWidget(selector.width_box);fields.addWidget(QLabel('×'));fields.addWidget(selector.height_box);fields.addWidget(selector.aspect)
-        selector.aspect.setToolTip('Lock selection aspect ratio');selector.aspect.setFixedWidth(78)
+        selector.aspect.setToolTip('Lock selection aspect ratio');ui.set(selector.aspect,"setFixedWidth",78)
         self.layout.addWidget(modes);self.layout.addWidget(dimensions)
         selector.capture_mode.currentTextChanged.connect(self.update_mode);self.update_mode(selector.capture_mode.currentText())
     def changeEvent(self,event):
@@ -74,5 +75,5 @@ class SelectionBar(QWidget):
         for label,key in MODES:
             button=self.buttons[key];button.setChecked(key==kind or key=='Scrolling' and kind=='Horizontal scrolling');button.setIcon(mode_icon(label,button.isChecked()))
     def fit(self,width):
-        self.layout.setDirection(QBoxLayout.Direction.TopToBottom if width<900 else QBoxLayout.Direction.LeftToRight)
+        self.layout.setDirection(QBoxLayout.Direction.TopToBottom if width<ui.px(900) else QBoxLayout.Direction.LeftToRight)
         self.adjustSize()

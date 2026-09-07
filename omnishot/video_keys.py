@@ -1,4 +1,5 @@
 """Keystroke inspector controls and source-event presentation rules."""
+from . import ui_scale as ui
 from PySide6.QtCore import Qt,Signal
 from PySide6.QtWidgets import QWidget,QHBoxLayout,QVBoxLayout,QSlider,QLabel,QRadioButton,QButtonGroup
 
@@ -6,8 +7,8 @@ from PySide6.QtWidgets import QWidget,QHBoxLayout,QVBoxLayout,QSlider,QLabel,QRa
 class KeySize(QWidget):
     valueChanged=Signal(int)
     def __init__(self,value=20,parent=None):
-        super().__init__(parent);layout=QHBoxLayout(self);layout.setContentsMargins(0,0,0,0)
-        self.slider=QSlider(Qt.Orientation.Horizontal);self.slider.setRange(10,72);self.slider.setAccessibleName('Keystroke size');self.label=QLabel();self.label.setMinimumWidth(38)
+        super().__init__(parent);layout=QHBoxLayout(self);ui.set(layout,"setContentsMargins",0,0,0,0)
+        self.slider=QSlider(Qt.Orientation.Horizontal);self.slider.setRange(10,72);self.slider.setAccessibleName('Keystroke size');self.label=QLabel();ui.set(self.label,"setMinimumWidth",38)
         layout.addWidget(self.slider);layout.addWidget(self.label);self.slider.valueChanged.connect(self.changed);self.setValue(value)
     def value(self):return self.slider.value()
     def setValue(self,value):self.slider.setValue(round(value));self.changed(self.value())
@@ -17,7 +18,7 @@ class KeySize(QWidget):
 class KeyMode(QWidget):
     toggled=Signal(bool)
     def __init__(self,commands=False,parent=None):
-        super().__init__(parent);layout=QVBoxLayout(self);layout.setContentsMargins(0,0,0,0);self.group=QButtonGroup(self)
+        super().__init__(parent);layout=QVBoxLayout(self);ui.set(layout,"setContentsMargins",0,0,0,0);self.group=QButtonGroup(self)
         self.commands=QRadioButton('Show only command keys');self.all=QRadioButton('Show all keys')
         for button in (self.commands,self.all):self.group.addButton(button);layout.addWidget(button)
         self.commands.toggled.connect(self.toggled);self.setChecked(commands)

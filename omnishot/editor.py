@@ -1,4 +1,5 @@
 from __future__ import annotations
+from . import ui_scale as ui
 from .theme import color as theme_color
 import base64
 import copy
@@ -483,7 +484,7 @@ class Editor(QMainWindow):
     pin_requested=Signal(str)
     def __init__(self,path,store):
         super().__init__();self.store=store;self.path=Path(path);self.setWindowTitle("OmniShot — Annotate")
-        self.resize(1120,800);self.base=load_image(path);self.original_image=None;self.source_transform=QTransform();self.objects=[];self.exporting=False;self.crop_session=None;self.clipboard_token=None
+        ui.set(self,"resize",1120,800);self.base=load_image(path);self.original_image=None;self.source_transform=QTransform();self.objects=[];self.exporting=False;self.crop_session=None;self.clipboard_token=None
         self.scene=QGraphicsScene(self);self.color=store.settings["palette"][0];self.highlight_alpha=100;self.undo_states=[];self.undo_index=-1
         self.background=None;self.inline=None;self.text_font=QFont(text_styles.family("Standard"),28);self.text_font.setBold(True);self.view=Canvas(self);self.setCentralWidget(self.view)
         self.expand_canvas=store.settings.get("auto_expand_canvas",False)
@@ -493,11 +494,11 @@ class Editor(QMainWindow):
         editor_toolbar.tools(self)
         for key,label,shortcut in (*editor_toolbar.TOOLS,('crop','Crop','C')):
             QShortcut(QKeySequence(shortcut),self,activated=lambda k=key:self.set_tool(k))
-        self.color_btn=QPushButton();self.color_btn.setFixedSize(28,28);self.color_btn.clicked.connect(self.pick_color);self.color_action=self.toolbar.addWidget(self.color_btn)
+        self.color_btn=QPushButton();ui.set(self.color_btn,"setFixedSize",28,28);self.color_btn.clicked.connect(self.pick_color);self.color_action=self.toolbar.addWidget(self.color_btn)
         self.width=QSpinBox();self.width.setRange(1,40);self.width.setValue(4);self.width.setToolTip("Stroke width");self.width.valueChanged.connect(self.change_selected_style);self.width_action=self.toolbar.addWidget(self.width)
-        self.width.setFixedWidth(54)
+        ui.set(self.width,"setFixedWidth",54)
         self.arrow_style=QComboBox();self.arrow_style.addItems(["standard","open","double","curved"]);self.arrow_style.setToolTip("Arrow style");self.arrow_style_action=self.toolbar.addWidget(self.arrow_style)
-        self.text_style=text_styles.StyleChoice();self.text_style.setMaximumWidth(190);self.text_style.setToolTip("Text style");self.text_style_action=self.toolbar.addWidget(self.text_style)
+        self.text_style=text_styles.StyleChoice();ui.set(self.text_style,"setMaximumWidth",190);self.text_style.setToolTip("Text style");self.text_style_action=self.toolbar.addWidget(self.text_style)
         self.font_size=QSpinBox();self.font_size.setRange(8,160);self.font_size.setValue(28);self.font_size.setSuffix(" pt");self.font_size_action=self.toolbar.addWidget(self.font_size)
         self.effect_strength=QSpinBox();self.effect_strength.setRange(2,80);self.effect_strength.setValue(18);self.effect_strength.setToolTip("Blur / pixelation strength");self.effect_strength_action=self.toolbar.addWidget(self.effect_strength);self.effect_strength.valueChanged.connect(self.change_selected_style)
         self.blur_mode=QComboBox();self.blur_mode.addItems(["Secure","Smooth"]);self.blur_mode.setToolTip("Secure replaces the selected pixels with an opaque texture. Smooth applies Gaussian blur. Export an image for sharing; editable projects retain the original.");self.blur_mode_action=self.toolbar.addWidget(self.blur_mode)
@@ -554,7 +555,7 @@ class Editor(QMainWindow):
         self.view.setDragMode(QGraphicsView.DragMode.RubberBandDrag if key=="select" else QGraphicsView.DragMode.NoDrag)
         for obj in self.objects:obj.setAcceptedMouseButtons(Qt.MouseButton.LeftButton if key=="select" else Qt.MouseButton.NoButton)
         self.view.setCursor(Qt.CursorShape.ArrowCursor if key=="select" else Qt.CursorShape.CrossCursor)
-        self.color_btn.setStyleSheet(f"background:{self.picker_color()};border:2px solid palette(mid);border-radius:14px")
+        ui.set(self.color_btn,"setStyleSheet",f"background:{self.picker_color()};border:2px solid palette(mid);border-radius:14px")
         self.statusBar().showMessage(f"{key.title()} · Space + drag pans · Shift constrains proportions · Ctrl + wheel zooms")
 
     def set_color(self,color,commit=True):
@@ -565,7 +566,7 @@ class Editor(QMainWindow):
             obj.props['color']=color
             if obj.props['kind']=='highlight':obj.props['highlight_alpha']=self.highlight_alpha
             obj.update()
-        self.color_btn.setStyleSheet(f"background:{self.picker_color()};border:2px solid palette(mid);border-radius:14px")
+        ui.set(self.color_btn,"setStyleSheet",f"background:{self.picker_color()};border:2px solid palette(mid);border-radius:14px")
         if selected and commit:self.commit()
 
     def picker_color(self):
@@ -647,7 +648,7 @@ class Editor(QMainWindow):
         if p["kind"]=="spotlight":self.spotlight.load(p)
         if p["kind"]=="text":self.text_font=text_styles.font_for(p)
         if p['kind']=='highlight':self.highlight_alpha=p.get('highlight_alpha',100)
-        self.color=p.get("color",self.color);self.color_btn.setStyleSheet(f"background:{self.picker_color()};border:2px solid palette(mid);border-radius:14px")
+        self.color=p.get("color",self.color);ui.set(self.color_btn,"setStyleSheet",f"background:{self.picker_color()};border:2px solid palette(mid);border-radius:14px")
         for widget,value in [(self.width,p.get("width",4)),(self.font_size,p.get("font_size",28)),(self.effect_strength,p.get("strength",18)),(self.arrow_style,p.get("style","standard")),(self.text_style,p.get("text_style","plain")),(self.blur_mode,p.get("blur_mode","Smooth")),(self.pixelate_mode,p.get("pixelate_mode","Classic"))]:
             widget.blockSignals(True)
             if isinstance(widget,text_styles.StyleChoice):widget.set_style(value)

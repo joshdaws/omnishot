@@ -11,6 +11,7 @@ import tomllib
 from PySide6.QtCore import QObject, QTimer, Signal
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
+from . import ui_scale as ui
 
 
 def paths():
@@ -66,7 +67,7 @@ def color(name):
 
 
 STYLE='''
-QWidget { background:palette(window); color:palette(window-text); font-size:13px; }
+QWidget { background:palette(window); color:palette(window-text); font-size:12px; }
 QMainWindow,QDialog { background:palette(window); }
 QToolBar { border:none; spacing:5px; padding:9px; background:palette(alternate-base); }
 QToolButton,QPushButton { border:1px solid palette(mid); background:palette(button); border-radius:6px; padding:7px 11px; }
@@ -75,6 +76,9 @@ QToolButton:checked,QPushButton:checked { background:palette(highlight); color:p
 QPushButton#primary { background:palette(highlight); border:1px solid palette(highlight); color:palette(highlighted-text); font-weight:600; }
 QPushButton:disabled,QToolButton:disabled { color:palette(placeholder-text); background:palette(alternate-base); }
 QLineEdit,QSpinBox,QDoubleSpinBox,QComboBox { padding:5px; border:1px solid palette(mid); border-radius:5px; background:palette(base); selection-background-color:palette(highlight); selection-color:palette(highlighted-text); }
+QCheckBox::indicator,QRadioButton::indicator { width:14px; height:14px; }
+QScrollBar:vertical { width:14px; }
+QScrollBar:horizontal { height:14px; }
 QListWidget { background:palette(base); border:1px solid palette(mid); border-radius:8px; }
 QListWidget::item { padding:10px; border-bottom:1px solid palette(alternate-base); }
 QListWidget::item:selected { background:palette(highlight); color:palette(highlighted-text); }
@@ -90,16 +94,24 @@ QToolTip { background:palette(window); color:palette(window-text); border:1px so
 
 class ThemeManager(QObject):
     changed=Signal()
-    def __init__(self,app,candidates=None):
+    def __init__(self,app,candidates=None,appearance_candidates=None):
         super().__init__(app);self.app=app;self.candidates=candidates;self.applied=None
-        app.setStyleSheet(STYLE);self.reload()
+        self.appearance_candidates=appearance_candidates if appearance_candidates is not None else ([Path(p).with_name('shell.toml') for p in candidates] if candidates is not None else None)
+        self.reload()
+        app.setStyleSheet(ui.stylesheet(STYLE))
         self.timer=QTimer(self);self.timer.setInterval(1000);self.timer.timeout.connect(self.reload);self.timer.start()
 
     def reload(self):
         global _current
+        appearance=ui.read(self.appearance_candidates)
+        resized=ui.apply(self.app,appearance) if appearance is not None else False
+        ui.fit_windows()
         current=read_palette(self.candidates)
         # Keep the last valid palette if a theme is being generated or edited.
-        if current is None or current==self.applied:return False
+        if current is None or current==self.applied:
+            if resized:
+                self.app.setStyleSheet(ui.stylesheet(STYLE));self.changed.emit()
+            return resized
         _current=current;self.applied=current
         palette=QPalette(self.app.palette())
         mapping={'Window':'background','WindowText':'foreground','Base':'base','Text':'foreground',
@@ -112,6 +124,6 @@ class ThemeManager(QObject):
             palette.setColor(QPalette.ColorGroup.Disabled,getattr(QPalette.ColorRole,role),QColor(current['muted']))
         self.app.setPalette(palette)
         # Re-polish stylesheet surfaces and repaint custom-drawn controls.
-        self.app.setStyleSheet(STYLE)
+        self.app.setStyleSheet(ui.stylesheet(STYLE))
         for widget in self.app.allWidgets():widget.update()
         self.changed.emit();return True

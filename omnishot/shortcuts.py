@@ -1,4 +1,5 @@
 """Manage only OmniShot's marked section of user-owned Hyprland Lua."""
+from . import ui_scale as ui
 import json
 import os
 from pathlib import Path
@@ -61,7 +62,7 @@ def write_shortcuts(values,store):
 class ShortcutsDialog(QDialog):
     def __init__(self,store,parent=None):
         super().__init__(parent);self.store=store;self.setWindowTitle("Keyboard shortcuts");layout=QVBoxLayout(self);self.fields={}
-        self.resize(620,min(720,self.screen().availableGeometry().height()-80));self.setMinimumSize(420,360)
+        self.resize(620,min(720,self.screen().availableGeometry().height()-80));ui.set(self,"setMinimumSize",420,360)
         values=store.settings.get("shortcuts",DEFAULTS)
         help=QLabel("Click a field and press a shortcut. Clear it to disable.\nSuper is shown as Meta. Existing bindings on the chosen keys\nwill be replaced; the previous configuration is backed up.");help.setWordWrap(True);layout.addWidget(help)
         scroll=QScrollArea();scroll.setWidgetResizable(True);scroll.setFrameShape(QScrollArea.Shape.NoFrame);content=QWidget();form=QFormLayout(content);scroll.setWidget(content);layout.addWidget(scroll,1)

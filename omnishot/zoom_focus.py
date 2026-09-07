@@ -1,4 +1,5 @@
 """Visual source framing for an editable recording zoom."""
+from . import ui_scale as ui
 from .theme import color as theme_color
 from PySide6.QtCore import Qt, Signal, QRectF, QPointF
 from PySide6.QtGui import QColor, QImage, QPainter, QPainterPath, QPen
@@ -12,7 +13,7 @@ class ZoomFocus(QWidget):
         super().__init__(parent)
         self.image = QImage(image) if image is not None else QImage()
         self.scale = 2.; self.cx = .5; self.cy = .5; self.drag = None
-        self.setMinimumSize(480, 240); self.setMaximumHeight(340)
+        ui.set(self,"setMinimumSize",480,240); ui.set(self,"setMaximumHeight",340)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setAccessibleName("Zoom focus frame")
         self.setToolTip("Drag the frame to move the focus. Drag a corner to resize. Arrow keys move the frame; Shift moves farther.")

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from . import ui_scale as ui
 import json
 import os
 from pathlib import Path
@@ -24,7 +25,7 @@ from .editor import error
 
 class AudioMeter(QProgressBar):
     def __init__(self,parent=None):
-        super().__init__(parent);self.setRange(0,100);self.setTextVisible(False);self.setMaximumHeight(8)
+        super().__init__(parent);self.setRange(0,100);self.setTextVisible(False);ui.set(self,"setMaximumHeight",8)
         self.reader=QProcess(self);self.reader.readyReadStandardOutput.connect(self.level)
     def start(self,device):
         self.stop();args=["--raw","--format=float32le","--rate=8000","--channels=1","--latency-msec=80"]
@@ -105,7 +106,7 @@ class RecordSetup(QDialog):
         self.camera_shape=QComboBox();self.camera_shape.addItems(["Circle","Square","Rounded","Rectangle"])
         self.camera_size=QSpinBox();self.camera_size.setRange(10,80);self.camera_size.setSuffix('%');self.camera_size.setValue(store.settings.get('record_camera_size',22));self.camera_size.setAccessibleName('Camera size');self.camera_size.setToolTip('Camera width as a percentage of the capture area; bounded to fit small areas.')
         self.camera_mirror=QCheckBox('Flip camera');self.camera_mirror.setChecked(store.settings.get('record_camera_mirror',False))
-        camera_style=QWidget();camera_style_layout=QHBoxLayout(camera_style);camera_style_layout.setContentsMargins(0,0,0,0);camera_style_layout.addWidget(self.camera_shape);camera_style_layout.addWidget(self.camera_size);camera_style_layout.addWidget(self.camera_mirror);form.addRow('Camera shape / size',camera_style)
+        camera_style=QWidget();camera_style_layout=QHBoxLayout(camera_style);ui.set(camera_style_layout,"setContentsMargins",0,0,0,0);camera_style_layout.addWidget(self.camera_shape);camera_style_layout.addWidget(self.camera_size);camera_style_layout.addWidget(self.camera_mirror);form.addRow('Camera shape / size',camera_style)
         self.camera.toggled.connect(sync_studio)
         self.delay=QSpinBox();self.delay.setRange(0,30);self.delay.setValue(store.settings["record_countdown"]);form.addRow("Countdown",self.delay)
         help=QLabel("Alt+Print opens recording · Stop and Pause are available from\nthe OmniShot tray menu. Recording controls stay out of the saved video.");help.setWordWrap(True);form.addRow(help)
@@ -181,7 +182,7 @@ class Recorder(QWidget):
         self.name_context=store.capture_name_context()
         self.log_path=self.path.with_suffix(".log");self.log=None;self.started=0;self.elapsed=0;self.pause_at=0;self.pause_total=0;self.remaining=opts["delay"];self.telemetry=None;self.old_dnd=None;self.last_lock_check=0;self.camera_track=None;self.camera_preview=None
         self.status_path=Path(os.environ.get("XDG_RUNTIME_DIR",str(store.root)))/"omnishot-status.json";self.last_status=None;self.clean_capture=None;self.dim_guides=[]
-        layout=QHBoxLayout(self);self.time_label=QLabel("Get ready…");self.time_label.setMinimumWidth(110);layout.addWidget(self.time_label)
+        layout=QHBoxLayout(self);self.time_label=QLabel("Get ready…");ui.set(self.time_label,"setMinimumWidth",110);layout.addWidget(self.time_label)
         self.pause_btn=button("Pause",self.pause);self.pause_btn.setEnabled(False);layout.addWidget(self.pause_btn)
         self.stop_btn=button("Stop",self.stop,True);layout.addWidget(self.stop_btn);layout.addWidget(button("Restart",self.restart_requested.emit));layout.addWidget(button("Hide",self.hide));layout.addWidget(button("Cancel",self.cancel))
         self.timer=QTimer(self);self.timer.timeout.connect(self.tick);self.timer.start(200);self.countdown=QTimer(self);self.countdown.timeout.connect(self.count)
@@ -509,7 +510,7 @@ def export_video(source,destination,opts,cancel=None):
 class VideoEditor(QWidget):
     export_progress=Signal(int)
     def __init__(self,path,store,prepared=None):
-        super().__init__();self.path=Path(path);self.store=store;self.setWindowTitle("OmniShot — Video Editor");self.resize(1180,780);self.setMinimumSize(900,600)
+        super().__init__();self.path=Path(path);self.store=store;self.setWindowTitle("OmniShot — Video Editor");ui.set(self,"resize",1180,780);ui.set(self,"setMinimumSize",900,600)
         self.restoring_options=True;self.metadata={};self.zooms=[];self.cuts=[];self.splits=[];self.styles={};self.last_frame=None;self.last_camera=None;self.camera_reader=None;self.export_cancel=None;self.close_after_export=False
         from .recording_checkpoint import restore_checkpoint
         try:restore_checkpoint(store,self.path)

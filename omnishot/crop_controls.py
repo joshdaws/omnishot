@@ -1,4 +1,5 @@
 """Crop size popover, anchored like the annotation color panel."""
+from . import ui_scale as ui
 from .theme import color as theme_color
 from PySide6.QtCore import Qt,QRectF,QPointF
 from PySide6.QtGui import QPixmap,QPainter,QPainterPath,QColor,QPen,QIcon
@@ -31,9 +32,9 @@ def show_below(popup,button,editor):
 class CropSizePopup(QWidget):
     def __init__(self,session):
         super().__init__(session.editor,Qt.WindowType.Popup|Qt.WindowType.FramelessWindowHint);self.session=session;self.setWindowTitle('OmniShot Crop Image Size')
-        layout=QFormLayout(self);layout.setContentsMargins(14,14,14,14);self.dimensions=[]
+        layout=QFormLayout(self);ui.set(layout,"setContentsMargins",14,14,14,14);self.dimensions=[]
         for index,label in enumerate(('Width','Height')):
-            spin=QSpinBox();spin.setRange(2,100000);spin.setKeyboardTracking(False);spin.setSuffix(' px');spin.setFixedWidth(140);spin.setAccessibleName('Crop '+label.lower());layout.addRow(label,spin);self.dimensions.append(spin)
+            spin=QSpinBox();spin.setRange(2,100000);spin.setKeyboardTracking(False);spin.setSuffix(' px');ui.set(spin,"setFixedWidth",140);spin.setAccessibleName('Crop '+label.lower());layout.addRow(label,spin);self.dimensions.append(spin)
             spin.editingFinished.connect(lambda i=index:session.size_changed(i))
         self.done=QPushButton('Done');self.done.setObjectName('primary');self.done.clicked.connect(self.close);layout.addRow(self.done)
     def closeEvent(self,event):

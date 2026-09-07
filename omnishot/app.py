@@ -1,4 +1,5 @@
 from __future__ import annotations
+from . import ui_scale as ui
 import argparse
 import io
 import json
@@ -163,11 +164,11 @@ class Controller:
         background(show,lambda shown:None if shown else self.show_standalone_menu(),lambda _:self.show_standalone_menu())
 
     def show_standalone_menu(self):
-        win=QWidget();win.setWindowTitle("OmniShot — Capture");win.setFixedWidth(540)
+        win=QWidget();win.setWindowTitle("OmniShot — Capture");ui.set(win,"setFixedWidth",540)
         escape=QShortcut(QKeySequence("Escape"),win,activated=win.close)
         escape.setContext(Qt.ShortcutContext.WindowShortcut)
-        layout=QVBoxLayout(win);layout.setContentsMargins(24,24,24,24)
-        title=QLabel("Capture. Make it clear.");title.setStyleSheet("font-size:24px;font-weight:600");layout.addWidget(title)
+        layout=QVBoxLayout(win);ui.set(layout,"setContentsMargins",24,24,24,24)
+        title=QLabel("Capture. Make it clear.");ui.set(title,"setStyleSheet","font-size:24px;font-weight:600");layout.addWidget(title)
         subtitle=QLabel("Select an area, annotate it, and put it to work.");subtitle.setObjectName("muted");layout.addWidget(subtitle)
         for items in [[("All-In-One","select"),("Area","area"),("Window","window")],[("Fullscreen","fullscreen"),("Previous area","previous"),("Self timer","timer")],
              [("Scrolling capture","scroll"),("Horizontal scroll","scroll-horizontal")],[("Record screen","record"),("Capture text","ocr")],

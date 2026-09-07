@@ -1,4 +1,5 @@
 """Visual cursor inspector controls with stable source-pixel edit values."""
+from . import ui_scale as ui
 from PySide6.QtCore import Qt,Signal,QSize,QRectF,QPointF
 from PySide6.QtGui import QIcon,QIconEngine,QPixmap,QPainter
 from PySide6.QtWidgets import QWidget,QHBoxLayout,QVBoxLayout,QSlider,QLabel,QPushButton,QToolButton,QButtonGroup
@@ -8,7 +9,7 @@ from .cursor_shape import paint_cursor
 class CursorSize(QWidget):
     valueChanged=Signal(int)
     def __init__(self,value=28,parent=None):
-        super().__init__(parent);layout=QVBoxLayout(self);layout.setContentsMargins(0,0,0,0)
+        super().__init__(parent);layout=QVBoxLayout(self);ui.set(layout,"setContentsMargins",0,0,0,0)
         row=QHBoxLayout();row.addWidget(QLabel('Size'));row.addStretch();self.label=QLabel();row.addWidget(self.label);layout.addLayout(row)
         self.slider=QSlider(Qt.Orientation.Horizontal);self.slider.setRange(10,100);self.slider.setAccessibleName('Cursor size');layout.addWidget(self.slider)
         self.slider.valueChanged.connect(self.changed);self.setValue(value)
@@ -23,7 +24,7 @@ class CursorSize(QWidget):
 class CursorMotion(QWidget):
     toggled=Signal(bool)
     def __init__(self,smooth=True,parent=None):
-        super().__init__(parent);layout=QHBoxLayout(self);layout.setContentsMargins(0,0,0,0);layout.setSpacing(0)
+        super().__init__(parent);layout=QHBoxLayout(self);ui.set(layout,"setContentsMargins",0,0,0,0);ui.set(layout,"setSpacing",0)
         self.group=QButtonGroup(self);self.buttons={}
         for name,value in [('Natural',False),('Smooth',True)]:
             button=QPushButton(name);button.setCheckable(True);button.setAccessibleName(name+' cursor motion')
@@ -51,10 +52,10 @@ class CursorStyle(QWidget):
     currentTextChanged=Signal(str)
     def __init__(self,value='Arrow',parent=None,compact=False):
         super().__init__(parent);self.compact=compact;self.group=QButtonGroup(self);self.buttons={};self.selected='';self.fill='#161821';self.outline='#ffffff'
-        row=QHBoxLayout(self);row.setContentsMargins(0,0,0,0);row.setSpacing(6)
-        self.setStyleSheet('QToolButton { border:2px solid transparent; border-radius:10px; padding:5px; background:palette(button); } QToolButton:hover { background:palette(light); } QToolButton:checked { border-color:palette(highlight); }')
+        row=QHBoxLayout(self);ui.set(row,"setContentsMargins",0,0,0,0);ui.set(row,"setSpacing",6)
+        ui.set(self,"setStyleSheet",'QToolButton { border:2px solid transparent; border-radius:10px; padding:5px; background:palette(button); } QToolButton:hover { background:palette(light); } QToolButton:checked { border-color:palette(highlight); }')
         for name in ('Arrow','Rounded Arrow','Dot','Crosshair'):
-            button=QToolButton();button.setCheckable(True);button.setFixedSize(48,48);button.setIconSize(QSize(32,32));button.setAccessibleName(name+' cursor');button.setToolTip(name)
+            button=QToolButton();button.setCheckable(True);ui.set(button,"setFixedSize",48,48);ui.set(button,"setIconSize",QSize(32,32));button.setAccessibleName(name+' cursor');button.setToolTip(name)
             self.group.addButton(button);self.buttons[name]=button;row.addWidget(button);button.clicked.connect(lambda checked=False,n=name:self.setCurrentText(n))
         row.addStretch();self.set_colors(self.fill,self.outline);self.setCurrentText(value)
     def currentText(self):return self.selected

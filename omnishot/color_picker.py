@@ -1,4 +1,5 @@
 """Native annotation color panel with explicit, persistent favorite swatches."""
+from . import ui_scale as ui
 from .theme import color as theme_color
 from PySide6.QtCore import Qt,QRectF,QPointF,Signal,QEvent
 from PySide6.QtGui import QColor,QPainter,QPen,QLinearGradient,QRegularExpressionValidator
@@ -29,7 +30,7 @@ def favorite_colors(settings):
 class ColorField(QWidget):
     changed=Signal(float,float)
     def __init__(self):
-        super().__init__();self.hue=0.;self.saturation=1.;self.value=1.;self.setFixedSize(208,154)
+        super().__init__();self.hue=0.;self.saturation=1.;self.value=1.;ui.set(self,"setFixedSize",208,154)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus);self.setAccessibleName('Saturation and brightness');self.setCursor(Qt.CursorShape.CrossCursor)
     def paintEvent(self,event):
         p=QPainter(self);r=QRectF(self.rect());gradient=QLinearGradient(0,0,self.width(),0);gradient.setColorAt(0,QColor('white'));gradient.setColorAt(1,QColor.fromHsvF(self.hue,1,1));p.fillRect(r,gradient)
@@ -52,12 +53,12 @@ class ColorField(QWidget):
 
 class ColorSwatch(QToolButton):
     def __init__(self,color):
-        super().__init__();self.color=QColor(color);self.setFixedSize(24,24);self.setToolTip(color_text(self.color));self.setAccessibleName(color_text(self.color))
+        super().__init__();self.color=QColor(color);ui.set(self,"setFixedSize",24,24);self.setToolTip(color_text(self.color));self.setAccessibleName(color_text(self.color))
     def paintEvent(self,event):
         p=QPainter(self);p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        p.setPen(QPen(theme_color('accent') if self.hasFocus() else theme_color('border'),1));p.setBrush(theme_color('muted'));p.drawEllipse(QRectF(4,4,16,16))
-        p.setBrush(self.color);p.drawEllipse(QRectF(4,4,16,16))
-        if self.isDown():p.setBrush(Qt.BrushStyle.NoBrush);p.setPen(QPen(QColor('white'),1.5));p.drawEllipse(QRectF(1,1,22,22))
+        p.setPen(QPen(theme_color('accent') if self.hasFocus() else theme_color('border'),1));p.setBrush(theme_color('muted'));p.drawEllipse(QRectF(self.rect()).adjusted(ui.px(4),ui.px(4),-ui.px(4),-ui.px(4)))
+        p.setBrush(self.color);p.drawEllipse(QRectF(self.rect()).adjusted(ui.px(4),ui.px(4),-ui.px(4),-ui.px(4)))
+        if self.isDown():p.setBrush(Qt.BrushStyle.NoBrush);p.setPen(QPen(QColor('white'),1.5));p.drawEllipse(QRectF(self.rect()).adjusted(ui.px(1),ui.px(1),-ui.px(1),-ui.px(1)))
 
 
 class ColorPicker(QWidget):
@@ -77,29 +78,29 @@ class ColorPicker(QWidget):
             QPushButton#primary:disabled { background:palette(mid); color:palette(placeholder-text); border:1px solid palette(mid); }
             QScrollArea { background:transparent; border:0; }
         '''
-        self.setStyleSheet(style)
-        outer=QHBoxLayout(self);outer.setContentsMargins(9,12,12,12);outer.setSpacing(10)
-        swatches=QHBoxLayout();swatches.setSpacing(1);base=QVBoxLayout();base.setSpacing(1)
+        ui.set(self,"setStyleSheet",style)
+        outer=QHBoxLayout(self);ui.set(outer,"setContentsMargins",9,12,12,12);ui.set(outer,"setSpacing",10)
+        swatches=QHBoxLayout();ui.set(swatches,"setSpacing",1);base=QVBoxLayout();ui.set(base,"setSpacing",1)
         self.base_buttons=[]
         for value in SWATCHES:
             b=ColorSwatch(value);b.clicked.connect(lambda checked=False,c=value:self.set_color(QColor(c)));base.addWidget(b);self.base_buttons.append(b)
         base.addStretch();swatches.addLayout(base)
-        self.favorites=QWidget();self.favorites.setStyleSheet('background:transparent');self.favorites_layout=QVBoxLayout(self.favorites);self.favorites_layout.setContentsMargins(0,0,0,0);self.favorites_layout.setSpacing(1)
-        scroll=QScrollArea();scroll.setWidget(self.favorites);scroll.setWidgetResizable(True);scroll.setFixedWidth(37);scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.favorites=QWidget();ui.set(self.favorites,"setStyleSheet",'background:transparent');self.favorites_layout=QVBoxLayout(self.favorites);ui.set(self.favorites_layout,"setContentsMargins",0,0,0,0);ui.set(self.favorites_layout,"setSpacing",1)
+        scroll=QScrollArea();scroll.setWidget(self.favorites);scroll.setWidgetResizable(True);ui.set(scroll,"setFixedWidth",37);scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         swatches.addWidget(scroll);outer.addLayout(swatches)
-        right=QVBoxLayout();right.setSpacing(7);outer.addLayout(right);self.field=ColorField();right.addWidget(self.field)
+        right=QVBoxLayout();ui.set(right,"setSpacing",7);outer.addLayout(right);self.field=ColorField();right.addWidget(self.field)
         self.hue_slider=QSlider(Qt.Orientation.Horizontal);self.hue_slider.setRange(0,359);self.hue_slider.setAccessibleName('Hue');self.hue_slider.setToolTip('Hue')
-        self.hue_slider.setStyleSheet('QSlider::groove:horizontal { height:8px; border-radius:4px; background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 red,stop:.167 yellow,stop:.333 lime,stop:.5 cyan,stop:.667 blue,stop:.833 magenta,stop:1 red); }')
+        ui.set(self.hue_slider,"setStyleSheet",'QSlider::groove:horizontal { height:8px; border-radius:4px; background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 red,stop:.167 yellow,stop:.333 lime,stop:.5 cyan,stop:.667 blue,stop:.833 magenta,stop:1 red); }')
         right.addWidget(self.hue_slider)
         self.alpha_slider=QSlider(Qt.Orientation.Horizontal);self.alpha_slider.setRange(0,100);self.alpha_slider.setAccessibleName('Opacity');self.alpha_slider.setToolTip('Opacity');right.addWidget(self.alpha_slider)
         row=QHBoxLayout();self.preview=ColorSwatch(color);self.preview.setFocusPolicy(Qt.FocusPolicy.NoFocus);self.preview.setAccessibleName('Current color');row.addWidget(self.preview);self.hex=QLineEdit();self.hex.setAccessibleName('Hex color');self.hex.setToolTip('Hexadecimal RGB color');self.hex.setMaxLength(7);self.hex.setValidator(QRegularExpressionValidator(QRegularExpression('#?[0-9a-fA-F]{6}'),self.hex));row.addWidget(self.hex)
-        self.eyedropper=QToolButton();self.eyedropper.setText('⌖');self.eyedropper.setToolTip('Pick a color from the screen');self.eyedropper.setAccessibleName('Pick from screen');self.eyedropper.setFixedSize(28,25);row.addWidget(self.eyedropper);right.addLayout(row)
-        values=QGridLayout();values.setSpacing(4);self.channels=[]
+        self.eyedropper=QToolButton();self.eyedropper.setText('⌖');self.eyedropper.setToolTip('Pick a color from the screen');self.eyedropper.setAccessibleName('Pick from screen');ui.set(self.eyedropper,"setFixedSize",28,25);row.addWidget(self.eyedropper);right.addLayout(row)
+        values=QGridLayout();ui.set(values,"setSpacing",4);self.channels=[]
         for index,label in enumerate(('R','G','B','Alpha')):
-            spin=QSpinBox();spin.setRange(0,100 if index==3 else 255);spin.setKeyboardTracking(False);spin.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons);spin.setFixedWidth(48);spin.setAccessibleName(label);spin.setToolTip('Opacity percent' if index==3 else label)
+            spin=QSpinBox();spin.setRange(0,100 if index==3 else 255);spin.setKeyboardTracking(False);spin.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons);ui.set(spin,"setFixedWidth",48);spin.setAccessibleName(label);spin.setToolTip('Opacity percent' if index==3 else label)
             values.addWidget(spin,0,index);caption=QLabel(label);caption.setAlignment(Qt.AlignmentFlag.AlignCenter);values.addWidget(caption,1,index);self.channels.append(spin)
         right.addLayout(values);self.save_button=QPushButton('+ Add to My Colors');self.save_button.setObjectName('primary');right.addWidget(self.save_button)
-        self.message=QLabel();self.message.setWordWrap(True);self.message.setMaximumWidth(208);right.addWidget(self.message);right.addStretch()
+        self.message=QLabel();self.message.setWordWrap(True);ui.set(self.message,"setMaximumWidth",208);right.addWidget(self.message);right.addStretch()
         self.field.changed.connect(self.field_changed);self.hue_slider.valueChanged.connect(self.hue_changed);self.alpha_slider.valueChanged.connect(self.alpha_changed)
         for spin in self.channels:spin.valueChanged.connect(self.channels_changed)
         self.hex.editingFinished.connect(self.hex_changed);self.save_button.clicked.connect(self.add_favorite);self.eyedropper.clicked.connect(self.pick_screen)
@@ -116,7 +117,7 @@ class ColorPicker(QWidget):
             widget.blockSignals(True);widget.setValue(value);widget.blockSignals(False)
         self.preview.color=QColor(color);self.preview.setToolTip(color_text(color));self.preview.update()
         self.hex.setText(color.name()[1:].upper())
-        self.alpha_slider.setStyleSheet(f'QSlider::groove:horizontal {{ height:8px; border-radius:4px; background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 {theme_color("border").name()},stop:1 {color.name()}); }}')
+        ui.set(self.alpha_slider,"setStyleSheet",f'QSlider::groove:horizontal {{ height:8px; border-radius:4px; background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 {theme_color("border").name()},stop:1 {color.name()}); }}')
         self.save_button.setEnabled(color_text(color) not in favorite_colors(self.store.settings))
     def set_color(self,color):
         if not color.isValid():return
@@ -152,7 +153,7 @@ class ColorPicker(QWidget):
             b=ColorSwatch(value);b.clicked.connect(lambda checked=False,c=value:self.set_color(QColor(c)));b.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             b.customContextMenuRequested.connect(lambda point,c=value,button=b:self.favorite_menu(button,point,c));self.favorites_layout.addWidget(b);self.favorite_buttons.append(b)
         for _ in range(max(0,10-len(self.favorite_buttons))):
-            empty=QLabel('◌');empty.setAlignment(Qt.AlignmentFlag.AlignCenter);empty.setFixedSize(24,24);empty.setStyleSheet('color:palette(mid);');self.favorites_layout.addWidget(empty)
+            empty=QLabel('◌');empty.setAlignment(Qt.AlignmentFlag.AlignCenter);ui.set(empty,"setFixedSize",24,24);ui.set(empty,"setStyleSheet",'color:palette(mid);');self.favorites_layout.addWidget(empty)
         self.favorites_layout.addStretch()
     def favorite_menu(self,button,point,value):
         menu=QMenu(self);menu.addAction('Remove from My Colors',lambda:self.persist([c for c in favorite_colors(self.store.settings) if c!=value]));menu.exec(button.mapToGlobal(point))

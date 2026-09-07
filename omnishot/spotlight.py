@@ -1,4 +1,5 @@
 """Editable spotlight aperture and dimming controls."""
+from . import ui_scale as ui
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPainterPath
 from PySide6.QtWidgets import QWidget,QHBoxLayout,QSlider,QSpinBox,QLabel
@@ -18,11 +19,11 @@ def aperture(rect,props):
 class SpotlightControls(QWidget):
     def __init__(self,editor):
         super().__init__();self.editor=editor;self.drag_changed=False
-        row=QHBoxLayout(self);row.setContentsMargins(0,0,0,0);row.setSpacing(4)
-        self.shape=Choice();self.shape.addItems(['Rounded rectangle','Rectangle','Ellipse']);self.shape.setMaximumWidth(150);self.shape.setToolTip('Spotlight shape');self.shape.setAccessibleName('Spotlight shape')
-        self.radius=QSpinBox();self.radius.setRange(0,500);self.radius.setValue(8);self.radius.setSuffix(' px');self.radius.setFixedWidth(72);self.radius.setToolTip('Spotlight corner radius');self.radius.setAccessibleName('Spotlight corner radius')
-        self.opacity=QSlider(Qt.Orientation.Horizontal);self.opacity.setRange(0,255);self.opacity.setValue(155);self.opacity.setFixedWidth(90);self.opacity.setAccessibleName('Spotlight dimming')
-        self.percent=QLabel();self.percent.setFixedWidth(35)
+        row=QHBoxLayout(self);ui.set(row,"setContentsMargins",0,0,0,0);ui.set(row,"setSpacing",4)
+        self.shape=Choice();self.shape.addItems(['Rounded rectangle','Rectangle','Ellipse']);ui.set(self.shape,"setMaximumWidth",150);self.shape.setToolTip('Spotlight shape');self.shape.setAccessibleName('Spotlight shape')
+        self.radius=QSpinBox();self.radius.setRange(0,500);self.radius.setValue(8);self.radius.setSuffix(' px');ui.set(self.radius,"setFixedWidth",72);self.radius.setToolTip('Spotlight corner radius');self.radius.setAccessibleName('Spotlight corner radius')
+        self.opacity=QSlider(Qt.Orientation.Horizontal);self.opacity.setRange(0,255);self.opacity.setValue(155);ui.set(self.opacity,"setFixedWidth",90);self.opacity.setAccessibleName('Spotlight dimming')
+        self.percent=QLabel();ui.set(self.percent,"setFixedWidth",35)
         for widget in (self.shape,self.radius,self.opacity,self.percent):row.addWidget(widget)
         self.refresh()
         self.shape.currentTextChanged.connect(self.apply);self.radius.valueChanged.connect(self.apply);self.opacity.valueChanged.connect(self.apply)

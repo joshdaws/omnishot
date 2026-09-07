@@ -1,4 +1,5 @@
 """Choose a capture's name before running any After Capture actions."""
+from . import ui_scale as ui
 from pathlib import Path
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QLabel,QLineEdit,QDialogButtonBox
 
@@ -8,7 +9,7 @@ class CaptureNameDialog(QDialog):
 
     def __init__(self,store,path,parent=None):
         super().__init__(parent);self.store=store;self.path=Path(path)
-        self.setWindowTitle('Name capture');self.setMinimumWidth(440)
+        self.setWindowTitle('Name capture');ui.set(self,"setMinimumWidth",440)
         layout=QVBoxLayout(self);layout.addWidget(QLabel('File name'))
         self.name=QLineEdit(Path(store.display_name(path)).stem);self.name.setAccessibleName('File name');layout.addWidget(self.name)
         hint=QLabel('Cancel keeps the automatic name. Discard removes this capture.');hint.setWordWrap(True);hint.setObjectName('muted');layout.addWidget(hint)

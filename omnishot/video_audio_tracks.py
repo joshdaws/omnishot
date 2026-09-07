@@ -1,4 +1,5 @@
 """Source-specific audio controls and a shared preview/export mixing graph."""
+from . import ui_scale as ui
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QWidget,QVBoxLayout,QHBoxLayout,QCheckBox,QSlider,QSpinBox
 
@@ -43,7 +44,7 @@ class TrackControls(QWidget):
     changed=Signal()
     def __init__(self,editor):
         super().__init__();self.editor=editor;self.saved=[];self.rows=[];self.signature=None
-        self.layout=QVBoxLayout(self);self.layout.setContentsMargins(0,0,0,0);self.layout.setSpacing(14)
+        self.layout=QVBoxLayout(self);ui.set(self.layout,"setContentsMargins",0,0,0,0);ui.set(self.layout,"setSpacing",14)
 
     def set_tracks(self,titles):
         if not titles and self.signature is None:return
@@ -57,11 +58,11 @@ class TrackControls(QWidget):
             label=names.get(sources[index]) if index<len(sources) else None
             label=label or title or f'Audio track {index+1}'
             opts=saved[index] if index<len(saved) else {}
-            widget=QWidget();box=QVBoxLayout(widget);box.setContentsMargins(0,0,0,0);box.setSpacing(6)
+            widget=QWidget();box=QVBoxLayout(widget);ui.set(box,"setContentsMargins",0,0,0,0);ui.set(box,"setSpacing",6)
             enabled=QCheckBox(label);enabled.setChecked(bool(opts.get('enabled',True)));box.addWidget(enabled)
             controls=QHBoxLayout();gain=QSlider(Qt.Orientation.Horizontal);gain.setRange(0,200);gain.setValue(round(opts.get('volume',100)))
             gain.setAccessibleName(label+' volume');gain.setToolTip('Double the source volume at 200%')
-            value=QSpinBox();value.setRange(0,200);value.setSuffix('%');value.setValue(gain.value());value.setFixedWidth(80);value.setAccessibleName(label+' volume percent')
+            value=QSpinBox();value.setRange(0,200);value.setSuffix('%');value.setValue(gain.value());ui.set(value,"setFixedWidth",80);value.setAccessibleName(label+' volume percent')
             controls.addWidget(gain,1);controls.addWidget(value);box.addLayout(controls)
             gain.valueChanged.connect(value.setValue);value.valueChanged.connect(gain.setValue)
             gain.valueChanged.connect(self.changed);enabled.toggled.connect(self.changed)

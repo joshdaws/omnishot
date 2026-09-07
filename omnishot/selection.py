@@ -1,4 +1,5 @@
 """Live and frozen per-display capture with crosshair, magnifier and exact region controls."""
+from . import ui_scale as ui
 from .theme import color as theme_color
 from PySide6.QtCore import Qt,QRect,QRectF,QPoint,QTimer,Signal
 from PySide6.QtGui import QPainter,QColor,QPen,QFont,QCursor
@@ -21,7 +22,7 @@ class Selector(QWidget):
         self.setWindowTitle(f"OmniShot Selection — {monitor['name']}");self.monitor=monitor;self.image=qimage(frame);self.mode=mode;self.terminal=False
         self.start=None;self.selection=QRect();self.pointer=QPoint(50,50);self.drag_kind="new";self.drag_original=QRect();self.setMouseTracking(True);self.setCursor(Qt.CursorShape.CrossCursor)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.controls=QWidget(self);layout=QHBoxLayout(self.controls);layout.setContentsMargins(8,8,8,8)
+        self.controls=QWidget(self);layout=QHBoxLayout(self.controls);ui.set(layout,"setContentsMargins",8,8,8,8)
         self.width_box=QSpinBox();self.width_box.setRange(2,20000);self.width_box.setValue(640)
         self.height_box=QSpinBox();self.height_box.setRange(2,20000);self.height_box.setValue(400)
         self.width_box.setKeyboardTracking(False);self.height_box.setKeyboardTracking(False)

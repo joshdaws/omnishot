@@ -1,4 +1,5 @@
 """Recognized text and explicit actions for links found locally in it."""
+from . import ui_scale as ui
 import re
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -53,13 +54,13 @@ def extract(path,languages='auto',linebreaks=True):
 
 class TextResultDialog(QDialog):
     def __init__(self,text,detect=True,parent=None,copied=False):
-        super().__init__(parent);self.setWindowTitle('OmniShot — Recognized Text');self.resize(600,400);self.detect=detect;self.copied=copied
+        super().__init__(parent);self.setWindowTitle('OmniShot — Recognized Text');ui.set(self,"resize",600,400);self.detect=detect;self.copied=copied
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
-        layout=QVBoxLayout(self);layout.setContentsMargins(20,20,20,20);layout.setSpacing(12)
+        layout=QVBoxLayout(self);ui.set(layout,"setContentsMargins",20,20,20,20);ui.set(layout,"setSpacing",12)
         self.status=QLabel('Text copied to clipboard' if copied else 'Review or edit the recognized text');layout.addWidget(self.status)
         self.text=QPlainTextEdit();self.text.setPlainText(text);self.text.setAccessibleName('Recognized text');layout.addWidget(self.text,1)
         self.link_label=QLabel('Detected links');layout.addWidget(self.link_label)
-        self.links=QListWidget();self.links.setAccessibleName('Detected links');self.links.setMaximumHeight(140);layout.addWidget(self.links)
+        self.links=QListWidget();self.links.setAccessibleName('Detected links');ui.set(self.links,"setMaximumHeight",140);layout.addWidget(self.links)
         buttons=QDialogButtonBox();layout.addWidget(buttons)
         self.copy_button=buttons.addButton('Copy Text',QDialogButtonBox.ButtonRole.ActionRole)
         self.open_button=buttons.addButton('Open Link',QDialogButtonBox.ButtonRole.ActionRole)

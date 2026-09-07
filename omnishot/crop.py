@@ -1,4 +1,5 @@
 """Adjustable, transactional image cropping and canvas expansion."""
+from . import ui_scale as ui
 from PySide6.QtCore import Qt,QRectF,QPointF,QSizeF,QSize
 from PySide6.QtGui import QColor,QPainterPath,QPen,QKeySequence,QShortcut
 from PySide6.QtWidgets import QToolBar,QDoubleSpinBox,QLabel,QWidget,QSizePolicy,QPushButton,QToolButton,QMenu,QApplication
@@ -48,13 +49,13 @@ class CropSession:
         self.hidden=[bar for bar in editor.findChildren(QToolBar) if not bar.isHidden()]
         for bar in self.hidden:bar.hide()
         self.menu_visible=editor.menuBar().isVisible();editor.menuBar().hide();editor.scene.clearSelection()
-        self.top=QToolBar('Crop controls',editor);self.top.setMovable(False);self.top.setStyleSheet('QToolBar QLabel { background:transparent; }');editor.addToolBar(self.top)
+        self.top=QToolBar('Crop controls',editor);self.top.setMovable(False);ui.set(self.top,"setStyleSheet",'QToolBar QLabel { background:transparent; }');editor.addToolBar(self.top)
         self.top.addWidget(QLabel('Crop  '));self.aspect=Choice();self.aspect.addItems(['Freeform','Original','1:1','16:9','9:16','4:3','3:2','5:4','Custom']);self.aspect.setAccessibleName('Crop aspect ratio');self.top.addWidget(self.aspect)
         self.ratio_fields=[]
         for label in ('width','height'):
-            spin=QDoubleSpinBox();spin.setRange(.01,100000);spin.setDecimals(2);spin.setKeyboardTracking(False);spin.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons);spin.setFixedWidth(60);spin.setAccessibleName('Aspect ratio '+label);self.top.addWidget(spin);self.ratio_fields.append(spin)
+            spin=QDoubleSpinBox();spin.setRange(.01,100000);spin.setDecimals(2);spin.setKeyboardTracking(False);spin.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons);ui.set(spin,"setFixedWidth",60);spin.setAccessibleName('Aspect ratio '+label);self.top.addWidget(spin);self.ratio_fields.append(spin)
         self.top.addAction('⇄',self.swap).setToolTip('Swap width and height')
-        self.fill_button=QToolButton();self.fill_button.setIconSize(QSize(24,24));self.fill_button.setAccessibleName('Canvas fill');self.fill_button.setToolTip('Canvas expansion fill');self.fill_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.fill_button=QToolButton();ui.set(self.fill_button,"setIconSize",QSize(24,24));self.fill_button.setAccessibleName('Canvas fill');self.fill_button.setToolTip('Canvas expansion fill');self.fill_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         self.fill_menu=QMenu(self.fill_button);self.fill_auto=self.fill_menu.addAction('Automatic',lambda:self.set_fill(None));self.fill_transparent=self.fill_menu.addAction('Transparent',lambda:self.set_fill(QColor(Qt.GlobalColor.transparent)));self.fill_menu.addSeparator();self.fill_menu.addAction('Custom color…',self.pick_fill)
         for action in (self.fill_auto,self.fill_transparent):action.setCheckable(True)
         self.fill_button.setMenu(self.fill_menu);self.top.addWidget(self.fill_button)
@@ -65,7 +66,7 @@ class CropSession:
         spacer=QWidget();spacer.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Preferred);self.top.addWidget(spacer)
         self.cancel_button=QPushButton('Cancel');self.cancel_button.clicked.connect(self.cancel);self.top.addWidget(self.cancel_button)
         self.apply_button=QPushButton('Crop');self.apply_button.setObjectName('primary');self.apply_button.clicked.connect(self.apply);self.top.addWidget(self.apply_button)
-        self.bottom=QToolBar('Crop view controls',editor);self.bottom.setMovable(False);self.bottom.setStyleSheet('QToolBar QLabel,QCheckBox { background:transparent; }');editor.addToolBar(Qt.ToolBarArea.BottomToolBarArea,self.bottom)
+        self.bottom=QToolBar('Crop view controls',editor);self.bottom.setMovable(False);ui.set(self.bottom,"setStyleSheet",'QToolBar QLabel,QCheckBox { background:transparent; }');editor.addToolBar(Qt.ToolBarArea.BottomToolBarArea,self.bottom)
         self.bottom.addAction('Fit',self.fit);self.bottom.addAction('100%',editor.actual_size)
         self.snap=SnapCheckBox('Snap to edges');self.snap.setChecked(editor.store.settings.get('crop_snap',False));self.snap.toggled.connect(self.save_snap);self.bottom.addWidget(self.snap);self.bottom.addWidget(QLabel('  Hold Ctrl to enable snapping'))
         spacer=QWidget();spacer.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Preferred);self.bottom.addWidget(spacer);self.reset_button=QPushButton('Revert to Original');self.reset_button.clicked.connect(self.reset);self.bottom.addWidget(self.reset_button)

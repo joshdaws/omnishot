@@ -1,4 +1,5 @@
 """Zoom animation selection and continuous joins between adjacent zooms."""
+from . import ui_scale as ui
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QWidget,QHBoxLayout,QToolButton,QButtonGroup
 
@@ -6,10 +7,10 @@ from PySide6.QtWidgets import QWidget,QHBoxLayout,QToolButton,QButtonGroup
 class AnimationChoice(QWidget):
     currentTextChanged=Signal(str)
     def __init__(self):
-        super().__init__();self.buttons={};box=QHBoxLayout(self);box.setContentsMargins(0,0,0,0);box.setSpacing(6)
+        super().__init__();self.buttons={};box=QHBoxLayout(self);ui.set(box,"setContentsMargins",0,0,0,0);ui.set(box,"setSpacing",6)
         self.group=QButtonGroup(self)
         for label in ('Smooth','Dynamic'):
-            control=QToolButton();control.setText(label);control.setCheckable(True);control.setMinimumHeight(32);box.addWidget(control,1);self.group.addButton(control);self.buttons[label]=control
+            control=QToolButton();control.setText(label);control.setCheckable(True);ui.set(control,"setMinimumHeight",32);box.addWidget(control,1);self.group.addButton(control);self.buttons[label]=control
             control.clicked.connect(lambda checked=False,value=label:self.currentTextChanged.emit(value))
         self.buttons['Smooth'].setChecked(True)
     def currentText(self):return next(label for label,button in self.buttons.items() if button.isChecked())

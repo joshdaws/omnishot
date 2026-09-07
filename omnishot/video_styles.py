@@ -1,4 +1,5 @@
 """Recording presentation controls with reversible, live preview."""
+from . import ui_scale as ui
 import copy
 from PySide6.QtCore import Signal,Qt,QSize,QAbstractTableModel,QModelIndex,QSignalBlocker
 from PySide6.QtGui import QColor,QFont,QPixmap,QIcon
@@ -16,7 +17,7 @@ class EffectsControls(QWidget):
     more_requested=Signal()
     def __init__(self,options,parent=None,section=None):
         super().__init__(parent)
-        self.original=copy.deepcopy(options);self.fields={};layout=QVBoxLayout(self);layout.setContentsMargins(0,0,0,0)
+        self.original=copy.deepcopy(options);self.fields={};layout=QVBoxLayout(self);ui.set(layout,"setContentsMargins",0,0,0,0)
         tabs=QTabWidget() if section is None else None
         if tabs:layout.addWidget(tabs)
         pages={}
@@ -24,7 +25,7 @@ class EffectsControls(QWidget):
             page=QWidget();pages[name]=QFormLayout(page)
             pages[name].setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
             pages[name].setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
-            if section is not None:pages[name].setContentsMargins(0,0,0,0)
+            if section is not None:ui.set(pages[name],"setContentsMargins",0,0,0,0)
             if tabs:tabs.addTab(page,name)
             elif name==section:layout.addWidget(page)
             else:page.setParent(self);page.hide()
@@ -42,7 +43,7 @@ class EffectsControls(QWidget):
         header=QHBoxLayout();header.addWidget(QLabel('Style'));header.addStretch()
         if section=='Cursor':
             from .editor_toolbar import ToolIcon
-            self.cursor_more=QToolButton();self.cursor_more.setIcon(QIcon(ToolIcon('more')));self.cursor_more.setIconSize(QSize(20,20));self.cursor_more.setStyleSheet('padding:0;');self.cursor_more.setAccessibleName('More cursor options');self.cursor_more.setToolTip('More cursor options');self.cursor_more.setFixedSize(28,24)
+            self.cursor_more=QToolButton();self.cursor_more.setIcon(QIcon(ToolIcon('more')));ui.set(self.cursor_more,"setIconSize",QSize(20,20));ui.set(self.cursor_more,"setStyleSheet",'padding:0;');self.cursor_more.setAccessibleName('More cursor options');self.cursor_more.setToolTip('More cursor options');ui.set(self.cursor_more,"setFixedSize",28,24)
             self.cursor_more.clicked.connect(self.more_requested);header.addWidget(self.cursor_more)
         pages['Cursor'].addRow(header);pages['Cursor'].addRow(field);field.currentTextChanged.connect(self.emit_changed)
         color("Cursor","cursor_color","Fill","#161821");color("Cursor","cursor_outline","Outline","#ffffff")
@@ -55,7 +56,7 @@ class EffectsControls(QWidget):
         choice('Keystrokes','key_style','Style',['Dark','Light','Custom'],'Custom' if 'key_color' in options or 'key_background' in options else 'Dark')
         field=PositionGrid(options.get('key_position','Bottom Center'));self.fields['key_position']=field;pages['Keystrokes'].addRow('Position',field);field.currentTextChanged.connect(self.emit_changed)
         field=KeyMode(options.get('key_commands_only',False));self.fields['key_commands_only']=field;pages['Keystrokes'].addRow('Options',field);field.toggled.connect(self.emit_changed)
-        advanced=QWidget();advanced_form=QFormLayout(advanced);advanced_form.setContentsMargins(0,0,0,0);advanced_form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+        advanced=QWidget();advanced_form=QFormLayout(advanced);ui.set(advanced_form,"setContentsMargins",0,0,0,0);advanced_form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
         more=QPushButton('More options');more.setCheckable(True);more.toggled.connect(advanced.setVisible);pages['Keystrokes'].addRow(more);pages['Keystrokes'].addRow(advanced);advanced.hide();pages['Keystrokes']=advanced_form
         field=QFontComboBox();field.setMinimumContentsLength(10);field.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
         field.setCurrentFont(QFont(options.get("key_font","sans-serif")));self.fields["key_font"]=field;pages["Keystrokes"].addRow("Font",field);field.currentFontChanged.connect(self.emit_changed)
@@ -102,7 +103,7 @@ class EffectsControls(QWidget):
 class EffectsDialog(QDialog):
     changed=Signal(dict)
     def __init__(self,options,parent=None):
-        super().__init__(parent);self.setWindowTitle("Recording effects");self.resize(420,410)
+        super().__init__(parent);self.setWindowTitle("Recording effects");ui.set(self,"resize",420,410)
         layout=QVBoxLayout(self);self.controls=EffectsControls(options,self);layout.addWidget(self.controls)
         self.fields=self.controls.fields;self.controls.changed.connect(self.changed)
         buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel)
@@ -167,7 +168,7 @@ class InputEventsModel(QAbstractTableModel):
 
 class InputEventsDialog(QDialog):
     def __init__(self,editor):
-        super().__init__(editor);self.setWindowTitle("Edit clicks and keystrokes");self.resize(690,470)
+        super().__init__(editor);self.setWindowTitle("Edit clicks and keystrokes");ui.set(self,"resize",690,470)
         layout=QVBoxLayout(self);layout.addWidget(QLabel("Hide an event or edit its time and label. The original input track is preserved."))
         self.model=InputEventsModel(editor.metadata.get("events",[]),editor.styles.get("event_edits",{}),editor.player.duration()/1000,self)
         table=QTableView();table.setModel(self.model);table.horizontalHeader().setSectionResizeMode(3,QHeaderView.ResizeMode.Stretch);table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows);layout.addWidget(table)

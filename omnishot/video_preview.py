@@ -1,4 +1,5 @@
 """Full-screen playback of the editor's current composition and source clock."""
+from . import ui_scale as ui
 from PySide6.QtCore import Qt, QEvent, QRectF, QTimer, Signal
 from PySide6.QtGui import QImage, QPainter, QColor
 from PySide6.QtMultimedia import QMediaPlayer
@@ -14,7 +15,7 @@ class PreviewLabel(QLabel):
         super().__init__();self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.expand=QToolButton(self);self.expand.setIcon(tool_icon('expand'))
         self.expand.setAccessibleName("Full-screen preview");self.expand.setToolTip("Full-screen preview (F11)")
-        self.expand.setFixedSize(30,30);self.expand.clicked.connect(self.expanded)
+        ui.set(self.expand,"setFixedSize",30,30);self.expand.clicked.connect(self.expanded)
 
     def resizeEvent(self,event):
         super().resizeEvent(event);self.expand.move(max(0,self.width()-38),8)
@@ -39,9 +40,9 @@ class FullscreenPreview(QWidget):
         self.setWindowTitle("OmniShot — Full-screen Preview")
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus);self.setMouseTracking(True)
-        self.setStyleSheet("QFrame#playbackControls {background:palette(window);border:1px solid palette(mid);border-radius:12px;} QLabel {color:palette(window-text);} QToolButton {color:palette(window-text);background:palette(button);border:1px solid palette(mid);border-radius:6px;padding:6px;} QToolButton:hover {background:palette(light);} QSlider::groove:horizontal {height:5px;background:palette(mid);} QSlider::handle:horizontal {background:palette(highlight);width:14px;margin:-5px 0;border-radius:7px;}")
+        ui.set(self,"setStyleSheet","QFrame#playbackControls {background:palette(window);border:1px solid palette(mid);border-radius:12px;} QLabel {color:palette(window-text);} QToolButton {color:palette(window-text);background:palette(button);border:1px solid palette(mid);border-radius:6px;padding:6px;} QToolButton:hover {background:palette(light);} QSlider::groove:horizontal {height:5px;background:palette(mid);} QSlider::handle:horizontal {background:palette(highlight);width:14px;margin:-5px 0;border-radius:7px;}")
         self.controls=QFrame(self);self.controls.setObjectName("playbackControls")
-        layout=QVBoxLayout(self.controls);layout.setContentsMargins(16,12,16,12)
+        layout=QVBoxLayout(self.controls);ui.set(layout,"setContentsMargins",16,12,16,12)
         self.seek=QSlider(Qt.Orientation.Horizontal);self.seek.setAccessibleName("Playback position")
         self.seek.setRange(0,editor.player.duration());self.seek.setValue(editor.player.position())
         self.seek.setSingleStep(1000);self.seek.setPageStep(5000);layout.addWidget(self.seek)
@@ -55,7 +56,7 @@ class FullscreenPreview(QWidget):
         self.play=button("Play / Pause",'play',editor.toggle)
         self.next=button("Next frame",'next',lambda:step_frame(editor,1));transport.addStretch()
         self.mute=button("Mute recording audio",'volume',editor.audio_muted.toggle)
-        self.volume=QSlider(Qt.Orientation.Horizontal);self.volume.setRange(0,100);self.volume.setValue(editor.audio_volume.value());self.volume.setFixedWidth(100)
+        self.volume=QSlider(Qt.Orientation.Horizontal);self.volume.setRange(0,100);self.volume.setValue(editor.audio_volume.value());ui.set(self.volume,"setFixedWidth",100)
         self.volume.setAccessibleName("Recording volume");self.volume.setToolTip("Recording volume · also applied to exports")
         transport.addWidget(self.volume)
         self.exit=QToolButton();self.exit.setText("Exit full screen");self.exit.setAccessibleName("Exit full screen");self.exit.setToolTip("Return to editor (Escape)")

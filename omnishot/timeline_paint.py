@@ -1,4 +1,5 @@
 """Viewport-sized rendering for the source-time thumbnail timeline."""
+from . import ui_scale as ui
 from .theme import color as theme_color
 import math
 from PySide6.QtCore import Qt,QRectF,QPointF
@@ -9,7 +10,7 @@ def paint(t):
     p=QPainter(t);p.setRenderHint(QPainter.RenderHint.Antialiasing);p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
     background=theme_color('base');muted=theme_color('muted')
     p.fillRect(t.rect(),background);p.setClipRect(t.plot_rect())
-    p.setPen(muted);font=p.font();font.setPointSizeF(8.5);p.setFont(font)
+    p.setPen(muted);font=p.font();font.setPointSizeF(8.5*ui.current.font_size/12);p.setFont(font)
     steps=sorted(set([1/t.fps,2/t.fps,5/t.fps,.1,.2,.5,1,2,5,10,15,30,60,120,300,600,1800,3600,7200,21600,86400]))
     step=next((s for s in steps if s*t.pixels_per_second()>=62),86400)
     left=t.offset();right=min(t.duration,left+t.visible_span());last_label_right=-math.inf
@@ -21,17 +22,17 @@ def paint(t):
         label_width=p.fontMetrics().horizontalAdvance(label)+8
         label_x=max(t.plot_rect().left(),min(t.plot_rect().right()-label_width,x-label_width/2))
         if label_x>=last_label_right+8:
-            p.setPen(muted);p.drawText(QRectF(label_x,0,label_width,22),Qt.AlignmentFlag.AlignCenter,label)
+            p.setPen(muted);p.drawText(QRectF(label_x,0,label_width,ui.px(22)),Qt.AlignmentFlag.AlignCenter,label)
             last_label_right=label_x+label_width
-        p.setPen(theme_color('border'));p.drawLine(QPointF(x,25),QPointF(x,116))
-    zoom_row=QRectF(t.plot_rect().left(),t.ZOOM_Y,t.plot_rect().width(),24)
+        p.setPen(theme_color('border'));p.drawLine(QPointF(x,ui.px(25)),QPointF(x,ui.px(116)))
+    zoom_row=QRectF(t.plot_rect().left(),t.ZOOM_Y,t.plot_rect().width(),ui.px(24))
     p.setPen(Qt.PenStyle.NoPen);p.setBrush(theme_color('surface'));p.drawRoundedRect(zoom_row,5,5)
     if not t.zooms:
         p.setPen(muted);p.drawText(zoom_row,Qt.AlignmentFlag.AlignCenter,'Click or drag to add zoom')
     if t.last_pointer is not None and zoom_row.contains(t.last_pointer) and not t.drag:
         gap=t.zoom_gap(t.time_at(t.last_pointer.x()))
         if gap:
-            a,b=gap;hover=QRectF(t.x(a),t.ZOOM_Y,t.x(b)-t.x(a),24).intersected(zoom_row)
+            a,b=gap;hover=QRectF(t.x(a),t.ZOOM_Y,t.x(b)-t.x(a),ui.px(24)).intersected(zoom_row)
             p.setPen(Qt.PenStyle.NoPen);p.setBrush(theme_color('hover'));p.drawRoundedRect(hover,5,5)
             if hover.width()>60:p.setPen(muted);p.drawText(hover,Qt.AlignmentFlag.AlignCenter,'+ Zoom')
     for i,zoom in enumerate(t.zooms):
@@ -74,12 +75,12 @@ def paint(t):
         p.setPen(QPen(theme_color('accent'),2));p.setBrush(Qt.BrushStyle.NoBrush);p.drawRoundedRect(r,5,5)
         handles(p,t,t.clip_rect('clip',t.selected[1]))
     if t.cut_mode and t.last_pointer is not None and row.contains(t.last_pointer):
-        x=t.x(round(t.time_at(t.last_pointer.x())*t.fps)/t.fps);p.setPen(QPen(muted,1));p.drawLine(QPointF(x,25),QPointF(x,114))
-    x=t.x(t.position);p.setPen(QPen(theme_color('red'),1.5));p.drawLine(QPointF(x,23),QPointF(x,118));p.setBrush(theme_color('red'))
-    p.drawPolygon(QPolygonF([QPointF(x-4,21),QPointF(x+4,21),QPointF(x+4,25),QPointF(x,29),QPointF(x-4,25)]));p.end()
+        x=t.x(round(t.time_at(t.last_pointer.x())*t.fps)/t.fps);p.setPen(QPen(muted,1));p.drawLine(QPointF(x,ui.px(25)),QPointF(x,ui.px(114)))
+    x=t.x(t.position);p.setPen(QPen(theme_color('red'),1.5));p.drawLine(QPointF(x,ui.px(23)),QPointF(x,ui.px(118)));p.setBrush(theme_color('red'))
+    p.drawPolygon(QPolygonF([QPointF(x-ui.px(4),ui.px(21)),QPointF(x+ui.px(4),ui.px(21)),QPointF(x+ui.px(4),ui.px(25)),QPointF(x,ui.px(29)),QPointF(x-ui.px(4),ui.px(25))]));p.end()
 
 
 def handles(p,t,r):
     p.setPen(QPen(theme_color('foreground'),2))
     for x in (r.left()+4,r.right()-4):
-        if t.plot_rect().left()<=x<=t.plot_rect().right():p.drawLine(QPointF(x,r.center().y()-5),QPointF(x,r.center().y()+5))
+        if t.plot_rect().left()<=x<=t.plot_rect().right():p.drawLine(QPointF(x,r.center().y()-ui.px(5)),QPointF(x,r.center().y()+ui.px(5)))

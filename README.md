@@ -71,6 +71,8 @@ The launcher is `~/.local/bin/omnishot`. The companion widget lives in `$XDG_CON
 
 The installer validates the plugin manifest, builds the native helpers, reloads Hyprland and checks for configuration errors. Verify the widget with `omarchy plugin list` and try **Ctrl+Print** followed by clicking the capture preview. If you change widget placement later, reinstalling preserves it. Changed widget code may restart the shell; layout-only changes hot-reload.
 
+Desktop windows, menus, capture previews, and editor controls follow Omarchy's **Display → Text size** setting and the active shell spacing scale. Changes apply while OmniShot is running. Qt handles each monitor's display scale separately; changing interface size does not resize screenshots, annotations, or exported recordings.
+
 ## Bar popup
 
 Click the OmniShot camera icon to open a panel anchored to the bar, following the same Omarchy UI as Display and Tailscale. Click the icon again, click outside, or press **Esc** to dismiss it. Use arrows or **h/j/k/l** to select an action, **Enter** to run it, and **Tab** to switch to a neighboring bar panel. **Print** and `omnishot menu` open this same panel on the focused display.

@@ -1,4 +1,5 @@
 """Recording editor layout: tools and inspector beside the preview, tracks below."""
+from . import ui_scale as ui
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtMultimedia import QMediaPlayer,QMediaMetaData
@@ -15,58 +16,58 @@ TOOL_STYLE='QToolButton { border:0; background:transparent; padding:6px; border-
 
 
 def build_editor_ui(editor):
-    e=editor;layout=QVBoxLayout(e);layout.setContentsMargins(12,10,12,10);layout.setSpacing(10)
+    e=editor;layout=QVBoxLayout(e);ui.set(layout,"setContentsMargins",12,10,12,10);ui.set(layout,"setSpacing",10)
     header=QHBoxLayout();title=QLabel(e.store.display_name(e.path))
     title.setSizePolicy(QSizePolicy.Policy.Ignored,QSizePolicy.Policy.Preferred);title.setToolTip(title.text());header.addWidget(title,1)
     e.undo_button=button('↶',lambda:e.edit_history.undo());e.redo_button=button('↷',lambda:e.edit_history.redo())
     for control,label,keys in [(e.undo_button,'Undo','Ctrl+Z'),(e.redo_button,'Redo','Ctrl+Shift+Z')]:
-        control.setText('');control.setIcon(tool_icon(label.lower()));control.setIconSize(QSize(20,20));control.setFixedWidth(36);control.setAccessibleName(label);control.setToolTip(label+' · '+keys);header.addWidget(control)
+        control.setText('');control.setIcon(tool_icon(label.lower()));ui.set(control,"setIconSize",QSize(20,20));ui.set(control,"setFixedWidth",36);control.setAccessibleName(label);control.setToolTip(label+' · '+keys);header.addWidget(control)
     e.project_btn=button("Save editable project…",e.save_project);header.addWidget(e.project_btn)
     e.export_btn=button("Export…",e.export,True);header.addWidget(e.export_btn);layout.addLayout(header)
-    body=QHBoxLayout();body.setSpacing(0);layout.addLayout(body,1)
-    rail=QWidget();rail.setFixedWidth(58);navigation=QVBoxLayout(rail);navigation.setContentsMargins(0,0,8,0);navigation.setSpacing(5);body.addWidget(rail)
-    rail.setStyleSheet(TOOL_STYLE)
-    e.inspector=QStackedWidget();e.inspector.setFixedWidth(284);body.addWidget(e.inspector)
+    body=QHBoxLayout();ui.set(body,"setSpacing",0);layout.addLayout(body,1)
+    rail=QWidget();ui.set(rail,"setFixedWidth",58);navigation=QVBoxLayout(rail);ui.set(navigation,"setContentsMargins",0,0,8,0);ui.set(navigation,"setSpacing",5);body.addWidget(rail)
+    ui.set(rail,"setStyleSheet",TOOL_STYLE)
+    e.inspector=QStackedWidget();ui.set(e.inspector,"setFixedWidth",284);body.addWidget(e.inspector)
     e.tool_group=QButtonGroup(e);e.tool_buttons={};e.tool_pages={}
     tools=[("Cursor","cursor-click"),("Keystrokes","keyboard"),
            ("Audio","volume"),("Camera","camera"),("Background","background"),
            ("Motion","motion"),("Trim","crop"),("Export","export")]
     for index,(name,icon) in enumerate(tools):
         tool=QToolButton();tool.setText(name);tool.setAccessibleName(name+" settings");tool.setToolTip(name)
-        tool.setIcon(tool_icon(icon));tool.setIconSize(QSize(23,23))
-        tool.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly);tool.setCheckable(True);tool.setFixedSize(48,38)
+        tool.setIcon(tool_icon(icon));ui.set(tool,"setIconSize",QSize(23,23))
+        tool.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly);tool.setCheckable(True);ui.set(tool,"setFixedSize",48,38)
         e.tool_group.addButton(tool,index);e.tool_buttons[name]=tool;navigation.addWidget(tool)
         scroll=QScrollArea();scroll.setWidgetResizable(True);scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        scroll.setStyleSheet(SCROLLBAR_STYLE)
+        ui.set(scroll,"setStyleSheet",SCROLLBAR_STYLE)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        page=QWidget();page_layout=QVBoxLayout(page);page_layout.setContentsMargins(14,6,14,12);page_layout.setSpacing(12)
-        heading=QLabel(name);heading.setStyleSheet("font-size:16px;font-weight:600;");page_layout.addWidget(heading)
+        page=QWidget();page_layout=QVBoxLayout(page);ui.set(page_layout,"setContentsMargins",14,6,14,12);ui.set(page_layout,"setSpacing",12)
+        heading=QLabel(name);ui.set(heading,"setStyleSheet","font-size:16px;font-weight:600;");page_layout.addWidget(heading)
         e.tool_pages[name]=page_layout;scroll.setWidget(page);e.inspector.addWidget(scroll)
     navigation.addStretch();e.tool_group.idClicked.connect(e.inspector.setCurrentIndex);e.tool_buttons["Cursor"].setChecked(True)
-    e.cut_tool=QToolButton();e.cut_tool.setCheckable(True);e.cut_tool.setFixedSize(48,38)
-    e.cut_tool.setIcon(tool_icon('cut'));e.cut_tool.setIconSize(QSize(23,23))
+    e.cut_tool=QToolButton();e.cut_tool.setCheckable(True);ui.set(e.cut_tool,"setFixedSize",48,38)
+    e.cut_tool.setIcon(tool_icon('cut'));ui.set(e.cut_tool,"setIconSize",QSize(23,23))
     e.cut_tool.setAccessibleName('Cut tool');e.cut_tool.setToolTip('Cut tool · B · Ctrl+B splits at the playhead');navigation.addWidget(e.cut_tool)
-    center=QVBoxLayout();center.setContentsMargins(14,0,0,0);body.addLayout(center,1)
+    center=QVBoxLayout();ui.set(center,"setContentsMargins",14,0,0,0);body.addLayout(center,1)
     from .video_preview import PreviewLabel,toggle_fullscreen
     e.video=PreviewLabel();e.video.expanded.connect(lambda:toggle_fullscreen(e))
     QShortcut(QKeySequence("F11"),e,activated=lambda:toggle_fullscreen(e))
-    e.video.setAlignment(Qt.AlignmentFlag.AlignCenter);e.video.setMinimumSize(320,220)
+    e.video.setAlignment(Qt.AlignmentFlag.AlignCenter);ui.set(e.video,"setMinimumSize",320,220)
     e.video.setSizePolicy(QSizePolicy.Policy.Ignored,QSizePolicy.Policy.Ignored);center.addWidget(e.video,1)
     transport=QHBoxLayout();e.time_label=QLabel("00:00 / 00:00");transport.addWidget(e.time_label);transport.addStretch()
     def transport_button(label,icon,slot):
-        control=QToolButton();control.setIcon(tool_icon(icon));control.setIconSize(QSize(20,20));control.setToolTip(label);control.setAccessibleName(label)
-        control.setStyleSheet(TOOL_STYLE)
+        control=QToolButton();control.setIcon(tool_icon(icon));ui.set(control,"setIconSize",QSize(20,20));control.setToolTip(label);control.setAccessibleName(label)
+        ui.set(control,"setStyleSheet",TOOL_STYLE)
         control.clicked.connect(slot);transport.addWidget(control);return control
     transport_button("Previous frame",'previous',lambda:step_frame(e,-1))
     e.play_button=transport_button("Play / Pause",'play',e.toggle)
     transport_button("Next frame",'next',lambda:step_frame(e,1));transport.addStretch()
     e.volume=QSlider(Qt.Orientation.Horizontal);e.volume.setRange(0,100);e.volume.setValue(100)
     e.volume.setToolTip("Recording volume · also applied to exports");e.volume.setAccessibleName("Recording volume")
-    e.timeline_zoom=QSlider(Qt.Orientation.Horizontal);e.timeline_zoom.setRange(0,100);e.timeline_zoom.setFixedWidth(88)
+    e.timeline_zoom=QSlider(Qt.Orientation.Horizontal);e.timeline_zoom.setRange(0,100);ui.set(e.timeline_zoom,"setFixedWidth",88)
     e.timeline_zoom.setAccessibleName("Timeline zoom");e.timeline_zoom.setToolTip("Timeline zoom · Home fits the entire recording")
     e.timeline_minus=QToolButton();e.timeline_minus.setText("−");e.timeline_plus=QToolButton();e.timeline_plus.setText("+")
     for control,label,delta in [(e.timeline_minus,"Zoom timeline out",-10),(e.timeline_plus,"Zoom timeline in",10)]:
-        control.setFixedSize(24,24);control.setStyleSheet("padding:0;");control.setAccessibleName(label);control.setToolTip(label);control.clicked.connect(lambda checked=False,d=delta:e.timeline_zoom.setValue(e.timeline_zoom.value()+d))
+        ui.set(control,"setFixedSize",24,24);ui.set(control,"setStyleSheet","padding:0;");control.setAccessibleName(label);control.setToolTip(label);control.clicked.connect(lambda checked=False,d=delta:e.timeline_zoom.setValue(e.timeline_zoom.value()+d))
     transport.addWidget(e.timeline_minus);transport.addWidget(e.timeline_zoom);transport.addWidget(e.timeline_plus);center.addLayout(transport)
     e.timeline=Timeline();layout.addWidget(e.timeline)
     e.cut_tool.toggled.connect(e.timeline.set_cut_mode);e.timeline.cut_mode_changed.connect(e.cut_tool.setChecked)
@@ -96,7 +97,7 @@ def build_editor_ui(editor):
     QShortcut(QKeySequence("Ctrl+Shift+S"),e,activated=e.save_project)
     def form(name):
         result=QFormLayout();result.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
-        result.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows);result.setVerticalSpacing(10);e.tool_pages[name].addLayout(result);return result
+        result.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows);ui.set(result,"setVerticalSpacing",10);e.tool_pages[name].addLayout(result);return result
     def integer(low,high,value=0,suffix=""):
         w=QSpinBox();w.setRange(low,high);w.setValue(value);w.setSuffix(suffix);return w
     def choice(items,current=None):
@@ -120,11 +121,11 @@ def build_editor_ui(editor):
     e.camera_fullscreen=check("Fullscreen camera");camera.addRow(e.camera_fullscreen)
     e.camera_recorded_framing=check('Use recorded camera framing',True);e.camera_recorded_framing.setToolTip('Replay camera placement, fullscreen and shape changes made during recording. Turn off to use one framing throughout.');camera.addRow(e.camera_recorded_framing);e.camera_recorded_framing.setVisible(bool(e.metadata.get('camera_framing')))
     bg=e.tool_pages["Background"];bg.addWidget(button("None",lambda:apply_background(e,None)))
-    bg.addWidget(QLabel("Gradients"));presets=QGridLayout();presets.setHorizontalSpacing(6);presets.setVerticalSpacing(8);bg.addLayout(presets)
+    bg.addWidget(QLabel("Gradients"));presets=QGridLayout();ui.set(presets,"setHorizontalSpacing",6);ui.set(presets,"setVerticalSpacing",8);bg.addLayout(presets)
     from .backgrounds import PRESETS
     for i,(name,colors) in enumerate(list(PRESETS.items())[:18]):
-        swatch=button("",lambda checked=False,n=name:apply_background(e,n));swatch.setFixedSize(43,38);swatch.setToolTip(name);swatch.setAccessibleName(name+" background")
-        swatch.setStyleSheet(f"background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 {colors[0]},stop:1 {colors[1]});border-radius:9px;")
+        swatch=button("",lambda checked=False,n=name:apply_background(e,n));ui.set(swatch,"setFixedSize",43,38);swatch.setToolTip(name);swatch.setAccessibleName(name+" background")
+        ui.set(swatch,"setStyleSheet",f"background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 {colors[0]},stop:1 {colors[1]});border-radius:9px;")
         presets.addWidget(swatch,i//5,i%5)
     bg.addWidget(button("Background…",e.edit_background));background_form=form("Background")
     e.padding=integer(0,500,0," px");background_form.addRow("Padding",e.padding)

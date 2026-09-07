@@ -1,4 +1,5 @@
 """Nine-position inspector control and bounded camera placement."""
+from . import ui_scale as ui
 from PySide6.QtCore import Qt,Signal,QRectF
 from PySide6.QtGui import QPainter,QColor
 from PySide6.QtWidgets import QWidget,QGridLayout,QToolButton,QButtonGroup
@@ -9,7 +10,7 @@ POSITIONS=('Top Left','Top Center','Top Right','Center Left','Center','Center Ri
 class PositionButton(QToolButton):
     def __init__(self,index,grid):
         super().__init__(grid);self.index=index;self.grid=grid
-        self.setCheckable(True);self.setFixedSize(38,30);self.setStyleSheet('padding:0;')
+        self.setCheckable(True);ui.set(self,"setFixedSize",38,30);ui.set(self,"setStyleSheet",'padding:0;')
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setAccessibleName(POSITIONS[index]);self.setToolTip(POSITIONS[index])
 
@@ -33,10 +34,10 @@ class PositionGrid(QWidget):
 
     def __init__(self,current='Bottom Right',parent=None):
         super().__init__(parent);self.group=QButtonGroup(self);self.buttons=[]
-        layout=QGridLayout(self);layout.setContentsMargins(0,0,0,0);layout.setSpacing(6)
+        layout=QGridLayout(self);ui.set(layout,"setContentsMargins",0,0,0,0);ui.set(layout,"setSpacing",6)
         for i in range(9):
             button=PositionButton(i,self);self.buttons.append(button);self.group.addButton(button,i);layout.addWidget(button,i//3,i%3)
-        self.setFixedSize(126,102);self.setCurrentText(current)
+        ui.set(self,"setFixedSize",126,102);self.setCurrentText(current)
         self.group.idClicked.connect(lambda i:self.currentTextChanged.emit(POSITIONS[i]))
 
     def currentText(self):return POSITIONS[max(0,self.group.checkedId())]

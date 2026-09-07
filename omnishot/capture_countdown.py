@@ -1,4 +1,5 @@
 """Cancelable screenshot countdown while the source application keeps focus."""
+from . import ui_scale as ui
 import math,time
 from PySide6.QtCore import Qt,QTimer,Signal
 from PySide6.QtWidgets import QWidget,QHBoxLayout,QLabel,QPushButton
@@ -19,7 +20,7 @@ class CaptureCountdown(QWidget):
         super().__init__(None,Qt.WindowType.Tool|Qt.WindowType.WindowStaysOnTopHint|Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating);self.setWindowTitle('OmniShot Self Timer')
         self.terminal=False;self.deadline=time.monotonic()+max(0,min(86400,float(seconds)))
-        row=QHBoxLayout(self);row.setContentsMargins(18,14,18,14);self.label=QLabel();row.addWidget(self.label)
+        row=QHBoxLayout(self);ui.set(row,"setContentsMargins",18,14,18,14);self.label=QLabel();row.addWidget(self.label)
         self.cancel_button=QPushButton('Cancel');self.cancel_button.clicked.connect(self.close);row.addWidget(self.cancel_button)
         self.keys=CountdownKeys(self);self.keys.activated.connect(lambda _:self.close())
         self.timer=QTimer(self);self.timer.setInterval(100);self.timer.timeout.connect(self.tick);self.label.setText(f'Capturing in {math.ceil(max(0,self.deadline-time.monotonic()))}…')

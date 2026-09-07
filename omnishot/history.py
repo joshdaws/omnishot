@@ -1,4 +1,5 @@
 """Capture-history filmstrip, with lazy previews and local recovery actions."""
+from . import ui_scale as ui
 from .theme import color as theme_color
 from collections import OrderedDict
 from pathlib import Path
@@ -43,10 +44,10 @@ class Filmstrip(QListWidget):
         super().__init__(parent);self.setViewMode(QListView.ViewMode.IconMode);self.setFlow(QListView.Flow.LeftToRight);self.setWrapping(False)
         self.setMovement(QListView.Movement.Static);self.setResizeMode(QListView.ResizeMode.Adjust)
         self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection);self.setUniformItemSizes(True)
-        self.setGridSize(QSize(260,190));self.setSpacing(9);self.setFixedHeight(212)
+        ui.set(self,"setGridSize",QSize(260,190));ui.set(self,"setSpacing",9);ui.set(self,"setFixedHeight",212)
         self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel);self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setStyleSheet('QListWidget { border:0; background:transparent; outline:0; }')
+        ui.set(self,"setStyleSheet",'QListWidget { border:0; background:transparent; outline:0; }')
         self.horizontalScrollBar().valueChanged.connect(self.viewport_changed)
     def resizeEvent(self,event):super().resizeEvent(event);self.viewport_changed.emit()
     def wheelEvent(self,event):
@@ -59,7 +60,7 @@ class Filmstrip(QListWidget):
 
 class CardDelegate(QStyledItemDelegate):
     def __init__(self,history):super().__init__(history.list);self.history=history
-    def sizeHint(self,option,index):return QSize(260,190)
+    def sizeHint(self,option,index):return ui.size(260,190)
     def paint(self,painter,option,index):
         row=index.data(ROW_ROLE);image=self.history.images.get(thumbnail_key(row));rect=QRectF(option.rect).adjusted(5,5,-5,-5)
         selected=bool(option.state&QStyle.StateFlag.State_Selected)
@@ -72,7 +73,7 @@ class CardDelegate(QStyledItemDelegate):
             painter.setPen(theme_color('muted'));label='Video' if row['kind']=='video' else 'GIF' if row['kind']=='gif' else 'Screenshot'
             painter.drawText(rect,Qt.AlignmentFlag.AlignCenter,label)
         if row['kind'] in ('video','gif'):
-            badge=QRectF(rect.left()+10,rect.bottom()-30,48,21);painter.setPen(Qt.PenStyle.NoPen);painter.setBrush(QColor(0,0,0,165));painter.drawRoundedRect(badge,6,6);painter.setPen(QColor('white'));painter.drawText(badge,Qt.AlignmentFlag.AlignCenter,'▶' if row['kind']=='video' else 'GIF')
+            badge=QRectF(rect.left()+ui.px(10),rect.bottom()-ui.px(30),ui.px(48),ui.px(21));painter.setPen(Qt.PenStyle.NoPen);painter.setBrush(QColor(0,0,0,165));painter.drawRoundedRect(badge,6,6);painter.setPen(QColor('white'));painter.drawText(badge,Qt.AlignmentFlag.AlignCenter,'▶' if row['kind']=='video' else 'GIF')
         painter.setClipping(False)
         if selected:
             painter.setPen(QPen(theme_color('accent'),4));painter.setBrush(Qt.BrushStyle.NoBrush);painter.drawRoundedRect(rect.adjusted(-1,-1,1,1),17,17)
@@ -82,19 +83,19 @@ class CardDelegate(QStyledItemDelegate):
 class History(QDialog):
     open_capture=Signal(str);pin_capture=Signal(str);restore_capture=Signal(str)
     def __init__(self,store,remove_captures=None):
-        super().__init__();self.store=store;self.remove_captures=remove_captures or self.remove_owned;self.setWindowTitle('OmniShot — Capture History');self.resize(960,345)
+        super().__init__();self.store=store;self.remove_captures=remove_captures or self.remove_owned;self.setWindowTitle('OmniShot — Capture History');ui.set(self,"resize",960,345)
         self.images=OrderedDict();self.pending=set();self.cancel=Event();self.closed=False;self.kind='all';self.rows=[]
-        layout=QVBoxLayout(self);layout.setContentsMargins(20,18,20,16);layout.setSpacing(12)
+        layout=QVBoxLayout(self);ui.set(layout,"setContentsMargins",20,18,20,16);ui.set(layout,"setSpacing",12)
         tabs=QHBoxLayout();tabs.addStretch();self.filters={};self.group=QButtonGroup(self);self.group.setExclusive(True)
         for label,kind in [('All','all'),('Screenshots','image'),('Videos','video'),('GIFs','gif')]:
-            b=QPushButton(label);b.setCheckable(True);b.setChecked(kind=='all');b.setMinimumWidth(78);b.clicked.connect(lambda checked,k=kind:self.set_filter(k));self.filters[kind]=b;self.group.addButton(b);tabs.addWidget(b)
-            b.setStyleSheet('QPushButton { border:0; border-radius:12px; padding:5px 15px; } QPushButton:checked { background:palette(highlight); color:palette(highlighted-text); }')
-        tabs.addStretch();self.more=QPushButton('⋯');self.more.setFixedWidth(36);self.more.setToolTip('History actions');self.more.clicked.connect(self.menu);tabs.addWidget(self.more);layout.addLayout(tabs)
+            b=QPushButton(label);b.setCheckable(True);b.setChecked(kind=='all');ui.set(b,"setMinimumWidth",78);b.clicked.connect(lambda checked,k=kind:self.set_filter(k));self.filters[kind]=b;self.group.addButton(b);tabs.addWidget(b)
+            ui.set(b,"setStyleSheet",'QPushButton { border:0; border-radius:12px; padding:5px 15px; } QPushButton:checked { background:palette(highlight); color:palette(highlighted-text); }')
+        tabs.addStretch();self.more=QPushButton('⋯');ui.set(self.more,"setFixedWidth",36);self.more.setToolTip('History actions');self.more.clicked.connect(self.menu);tabs.addWidget(self.more);layout.addLayout(tabs)
         self.search=QLineEdit();self.search.setPlaceholderText('Search capture names…');self.search.hide();self.search.textChanged.connect(self.refresh);layout.addWidget(self.search)
         self.list=Filmstrip(self);self.list.setItemDelegate(CardDelegate(self));layout.addWidget(self.list)
         footer=QHBoxLayout();self.count=QLabel();self.count.setObjectName('muted');footer.addWidget(self.count,1)
-        self.restore_button=QPushButton('↩ Restore');self.restore_button.setObjectName('primary');self.restore_button.setMinimumWidth(130);self.restore_button.clicked.connect(lambda:self.emit_selected(self.restore_capture));footer.addWidget(self.restore_button)
-        self.restore_button.setStyleSheet('QPushButton { background:palette(highlight); color:palette(highlighted-text); border:0; border-radius:9px; padding:6px 15px; } QPushButton:hover { background:palette(light); color:palette(window-text); } QPushButton:disabled { background:palette(mid); }')
+        self.restore_button=QPushButton('↩ Restore');self.restore_button.setObjectName('primary');ui.set(self.restore_button,"setMinimumWidth",130);self.restore_button.clicked.connect(lambda:self.emit_selected(self.restore_capture));footer.addWidget(self.restore_button)
+        ui.set(self.restore_button,"setStyleSheet",'QPushButton { background:palette(highlight); color:palette(highlighted-text); border:0; border-radius:9px; padding:6px 15px; } QPushButton:hover { background:palette(light); color:palette(window-text); } QPushButton:disabled { background:palette(mid); }')
         right=QLabel('');footer.addWidget(right,1);layout.addLayout(footer)
         self.list.itemDoubleClicked.connect(lambda _:self.emit_selected(self.open_capture));self.list.itemSelectionChanged.connect(self.selection_changed)
         self.list.delete_pressed.connect(self.delete)

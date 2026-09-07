@@ -1,4 +1,5 @@
 from __future__ import annotations
+from . import ui_scale as ui
 import time
 import shutil
 from pathlib import Path
@@ -117,27 +118,31 @@ class QuickOverlay(QWidget):
         self.is_video=self.path.suffix.lower() in (".mp4",".gif",".webm",".mov",".mkv")
         self.content_path=self.path if self.is_video else store.display_image(self.path)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
-        layout=QVBoxLayout(self);layout.setContentsMargins(10,10,10,10)
-        top=QHBoxLayout();self.title=QLabel("Recording ready" if self.is_video else "Capture ready");self.title.setStyleSheet("font-weight:600");top.addWidget(self.title);top.addStretch()
+        layout=QVBoxLayout(self);ui.set(layout,"setContentsMargins",10,10,10,10)
+        top=QHBoxLayout();self.title=QLabel("Recording ready" if self.is_video else "Capture ready");ui.set(self.title,"setStyleSheet","font-weight:600");top.addWidget(self.title);top.addStretch()
         from .editor_toolbar import icon
-        self.trash_button=button('',lambda:self.trash_requested.emit(str(self.path)));self.trash_button.setIcon(icon('trash'));self.trash_button.setIconSize(QSize(20,20));self.trash_button.setFixedSize(36,36);self.trash_button.setAccessibleName('Move to Trash');self.trash_button.setToolTip('Move capture and automatically saved file to Trash');top.addWidget(self.trash_button)
+        self.trash_button=button('',lambda:self.trash_requested.emit(str(self.path)));self.trash_button.setIcon(icon('trash'));ui.set(self.trash_button,"setIconSize",QSize(20,20));ui.set(self.trash_button,"setFixedSize",36,36);self.trash_button.setAccessibleName('Move to Trash');self.trash_button.setToolTip('Move capture and automatically saved file to Trash');top.addWidget(self.trash_button)
         top.addWidget(button("×",self.close));layout.addLayout(top)
-        self.preview=DragPreview(self.content_path);width=store.settings["overlay_size"];self.preview.setMinimumHeight(110)
+        self.preview=DragPreview(self.content_path);width=store.settings["overlay_size"];ui.set(self.preview,"setMinimumHeight",110)
         self.preview.activated.connect(lambda:self.annotate.emit(str(self.path)));layout.addWidget(self.preview)
         self.info=QLabel();self.info.setObjectName("muted");layout.addWidget(self.info);self.refresh_content()
         actions=QHBoxLayout()
         entries=[("Edit" if self.is_video else "Annotate",lambda:self.annotate.emit(str(self.path))),("Copy",self.copy),("Save",self.save)]
         if not self.is_video:entries.append(("Pin",lambda:self.pin.emit(str(self.path))))
         for text,slot in entries:actions.addWidget(button(text,slot,text in ("Annotate","Edit")))
-        layout.addLayout(actions);self.setFixedWidth(max(335,width+20))
+        layout.addLayout(actions);ui.set(self,"setFixedWidth",max(335,width+20))
         self.restore_button=button("↑ Show capture",lambda:self.set_collapsed(False));layout.addWidget(self.restore_button);self.restore_button.hide()
         self.timer=QTimer(self);self.timer.setSingleShot(True);self.timer.timeout.connect(self.auto_close)
         self.preview.drag_started.connect(self.drag_started);self.preview.drag_finished.connect(self.drag_finished)
         if store.settings["overlay_timeout"]:self.timer.start(store.settings["overlay_timeout"]*1000)
         self.index=index
+        ui.watch(self,"rescale_preview")
         from .overlay_keys import OverlayKeys
         self.hover_keys=OverlayKeys(self);self.hover_keys.activated.connect(self.keyboard_action)
         self.setToolTip("While hovered: Ctrl+C copy · Ctrl+S save · Ctrl+E annotate · Ctrl+P pin · Ctrl+W close · Space preview")
+    def rescale_preview(self):
+        self.refresh_content();self.adjustSize()
+        if self.isVisible():QTimer.singleShot(0,lambda:self.position_on(self.target_screen or self.screen()))
     def drag_started(self):
         self.dragging=True;self.timer.stop();self.hover_keys.stop()
     def drag_finished(self,accepted,keep):
@@ -173,12 +178,12 @@ class QuickOverlay(QWidget):
             cap=cv2.VideoCapture(str(self.path));valid,frame=cap.read()
             if valid:pix=QPixmap.fromImage(qimage(cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)));duration=f" · {cap.get(cv2.CAP_PROP_FRAME_COUNT)/(cap.get(cv2.CAP_PROP_FPS) or 30):.1f} s"
             cap.release()
-        self.thumbnail=pix.scaled(self.store.settings["overlay_size"],185,Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation);self.preview.setPixmap(self.thumbnail)
+        self.thumbnail=pix.scaled(ui.px(self.store.settings["overlay_size"]),ui.px(185),Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation);self.preview.setPixmap(self.thumbnail)
         self.info.setText(f"{pix.width()} × {pix.height()}{duration} · {self.content_path.stat().st_size//1024} KB")
         self.title.setText("Recording ready" if self.is_video else "Capture ready")
         self.title.setToolTip(self.store.display_name(self.path));self.preview.setToolTip(self.store.display_name(self.path))
         if self.store.display_name(self.path)!=self.path.name:
-            self.title.setText(self.title.fontMetrics().elidedText(Path(self.store.display_name(self.path)).stem,Qt.TextElideMode.ElideRight,240))
+            self.title.setText(self.title.fontMetrics().elidedText(Path(self.store.display_name(self.path)).stem,Qt.TextElideMode.ElideRight,ui.px(240)))
     def rename(self):
         name,accepted=QInputDialog.getText(self,"Rename capture","Name",text=Path(self.store.display_name(self.path)).stem)
         if accepted:
@@ -200,7 +205,7 @@ class QuickOverlay(QWidget):
             self.hover_player=MediaPlayer(self);self.hover_sink=QVideoSink(self);self.hover_player.setVideoOutput(self.hover_sink);self.hover_player.setLoops(QMediaPlayer.Loops.Infinite);self.hover_player.setSource(QUrl.fromLocalFile(str(self.path.resolve())))
             def frame_changed(frame):
                 image=frame.toImage()
-                if not image.isNull():self.preview.setPixmap(QPixmap.fromImage(image).scaled(self.store.settings["overlay_size"],185,Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation))
+                if not image.isNull():self.preview.setPixmap(QPixmap.fromImage(image).scaled(ui.px(self.store.settings["overlay_size"]),ui.px(185),Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation))
             self.hover_sink.videoFrameChanged.connect(frame_changed)
         self.hover_player.play()
     def leaveEvent(self,event):
@@ -228,7 +233,7 @@ class QuickOverlay(QWidget):
         event.accept()
     def preview_large(self):
         if self.quicklook:self.quicklook.show();return
-        dialog=QDialog(self);dialog.setWindowTitle("OmniShot — Preview");dialog.resize(960,700);layout=QVBoxLayout(dialog)
+        dialog=QDialog(self);dialog.setWindowTitle("OmniShot — Preview");ui.set(dialog,"resize",960,700);layout=QVBoxLayout(dialog)
         if self.is_video:
             from PySide6.QtMultimedia import QMediaPlayer,QAudioOutput
             from PySide6.QtMultimediaWidgets import QVideoWidget
@@ -249,9 +254,9 @@ class QuickOverlay(QWidget):
     def position_on(self,screen):
         self.target_screen=screen
         r=screen.availableGeometry();corner=self.store.settings["overlay_corner"]
-        x=r.left()+18 if "left" in corner else r.right()-self.width()-18
-        y=r.top()+18 if "top" in corner else r.bottom()-self.height()-18
-        y+=self.index*18 if "top" in corner else -self.index*18
+        x=r.left()+ui.px(18) if "left" in corner else r.right()-self.width()-ui.px(18)
+        y=r.top()+ui.px(18) if "top" in corner else r.bottom()-self.height()-ui.px(18)
+        y+=self.index*ui.px(18) if "top" in corner else -self.index*ui.px(18)
         place_window(self,x,y);self.update()
     def copy(self):
         if self.copying:return
@@ -461,9 +466,9 @@ from .history import History
 
 class Settings(QDialog):
     def __init__(self,store,tab="general"):
-        super().__init__();self.store=store;self.setWindowTitle("OmniShot — Settings");self.resize(800,640);self.fields={};self.forms={};self.wallpaper_data=store.settings["wallpaper_data"];self.wallpaper_follow_at_open=store.settings["wallpaper_follow_changes"];self.filename_options={key:store.settings[key] for key in ("filename_format","filename_utc","filename_remove_illegal")}
+        super().__init__();self.store=store;self.setWindowTitle("OmniShot — Settings");ui.set(self,"resize",800,640);self.fields={};self.forms={};self.wallpaper_data=store.settings["wallpaper_data"];self.wallpaper_follow_at_open=store.settings["wallpaper_follow_changes"];self.filename_options={key:store.settings[key] for key in ("filename_format","filename_utc","filename_remove_illegal")}
         layout=QVBoxLayout(self);body=QHBoxLayout();layout.addLayout(body,1)
-        self.sections=QListWidget();self.sections.setFixedWidth(165);body.addWidget(self.sections)
+        self.sections=QListWidget();ui.set(self.sections,"setFixedWidth",165);body.addWidget(self.sections)
         self.pages=QStackedWidget();body.addWidget(self.pages,1);self.page_names=[]
         descriptions={
             "general":"Choose where captures go and what happens after you capture.",
@@ -478,8 +483,8 @@ class Settings(QDialog):
             "about":"Capture, annotate and record on Omarchy."}
         for key,title in [("general","General"),("wallpaper","Wallpaper"),("screenshots","Screenshots"),("quickaccess","Quick Access"),("recording","Recording"),("annotate","Annotate"),("text","Text Recognition"),("advanced","Advanced"),("shortcuts","Shortcuts"),("about","About")]:
             self.sections.addItem(title);self.page_names.append(key);scroll=QScrollArea();scroll.setWidgetResizable(True);scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-            page=QWidget();form=QFormLayout(page);form.setVerticalSpacing(15);form.setContentsMargins(20,12,16,20)
-            heading=QLabel(title);heading.setStyleSheet("font-size:22px;font-weight:600");form.addRow(heading)
+            page=QWidget();form=QFormLayout(page);ui.set(form,"setVerticalSpacing",15);ui.set(form,"setContentsMargins",20,12,16,20)
+            heading=QLabel(title);ui.set(heading,"setStyleSheet","font-size:22px;font-weight:600");form.addRow(heading)
             description=QLabel(descriptions[key]);description.setWordWrap(True);description.setObjectName("muted");form.addRow(description)
             self.forms[key]=form;scroll.setWidget(page);self.pages.addWidget(scroll)
         self.sections.currentRowChanged.connect(self.pages.setCurrentIndex)
@@ -493,7 +498,7 @@ class Settings(QDialog):
             box=QSpinBox();box.setRange(lo,hi);box.setValue(store.settings[key]);box.setSuffix(suffix);self.fields[key]=box;self.forms[page].addRow(label,box)
         def check(page,key,label):
             box=QCheckBox(label);box.setChecked(store.settings.get(key,False));self.fields[key]=box;self.forms[page].addRow(box)
-        folder=QWidget();row=QHBoxLayout(folder);row.setContentsMargins(0,0,0,0);self.fields["output_dir"]=QLineEdit(store.settings["output_dir"]);row.addWidget(self.fields["output_dir"]);row.addWidget(button("Choose…",self.choose_folder));self.forms["general"].addRow("Save folder",folder)
+        folder=QWidget();row=QHBoxLayout(folder);ui.set(row,"setContentsMargins",0,0,0,0);self.fields["output_dir"]=QLineEdit(store.settings["output_dir"]);row.addWidget(self.fields["output_dir"]);row.addWidget(button("Choose…",self.choose_folder));self.forms["general"].addRow("Save folder",folder)
         self.forms["general"].addRow("Appearance",QLabel("Follows your Omarchy theme"));spin("advanced","history_days","Keep capture history",1,30," days")
         labels.update(both="File and image",file="File only",image="Image only")
         combo("advanced","clipboard_mode","Copy to clipboard",["both","image","file"])
@@ -503,8 +508,8 @@ class Settings(QDialog):
         check("advanced","filename_scale_suffix","Append display scale to image filenames (@2x, @1.6x)")
         self.forms["advanced"].addRow("File name format",button("Customize…",self.customize_filename))
         self.filename_preview=QLabel(self.filename_options["filename_format"]);self.filename_preview.setTextFormat(Qt.TextFormat.PlainText);self.filename_preview.setWordWrap(True);self.forms["advanced"].addRow(self.filename_preview)
-        title=QLabel("After Capture");title.setStyleSheet("font-size:16px;font-weight:600");self.forms["general"].addRow(title)
-        matrix=QWidget();grid=QGridLayout(matrix);grid.setContentsMargins(0,0,0,0);grid.setVerticalSpacing(14);grid.setColumnStretch(0,1);self.action_boxes={}
+        title=QLabel("After Capture");ui.set(title,"setStyleSheet","font-size:16px;font-weight:600");self.forms["general"].addRow(title)
+        matrix=QWidget();grid=QGridLayout(matrix);ui.set(grid,"setContentsMargins",0,0,0,0);ui.set(grid,"setVerticalSpacing",14);grid.setColumnStretch(0,1);self.action_boxes={}
         for column,(kind,title) in enumerate((("capture","Screenshot"),("recording","Recording")),1):
             grid.addWidget(QLabel(title),0,column,alignment=Qt.AlignmentFlag.AlignCenter);self.action_boxes[kind]={}
         for row,(action,label) in enumerate((("overlay","Show Quick Access Overlay"),("copy","Copy to clipboard"),("save","Save"),("annotate","Open Annotate"),("pin","Pin to screen"),("edit","Open Video Editor")),1):
@@ -517,14 +522,14 @@ class Settings(QDialog):
         combo("wallpaper","wallpaper_source","Wallpaper",["desktop","custom"])
         check("wallpaper","wallpaper_follow_changes","Follow desktop wallpaper changes")
         self.wallpaper_choose=button("Choose custom image…",self.choose_wallpaper);self.forms["wallpaper"].addRow(self.wallpaper_choose)
-        self.wallpaper_preview=QLabel();self.wallpaper_preview.setAlignment(Qt.AlignmentFlag.AlignCenter);self.wallpaper_preview.setMinimumHeight(180);self.forms["wallpaper"].addRow(self.wallpaper_preview)
+        self.wallpaper_preview=QLabel();self.wallpaper_preview.setAlignment(Qt.AlignmentFlag.AlignCenter);ui.set(self.wallpaper_preview,"setMinimumHeight",180);self.forms["wallpaper"].addRow(self.wallpaper_preview)
         self.fields["wallpaper_source"].currentIndexChanged.connect(self.refresh_wallpaper);self.fields["wallpaper_follow_changes"].toggled.connect(self.refresh_wallpaper);self.refresh_wallpaper()
         combo("screenshots","format","Image format",["png","jpg","webp","heic"])
         for key,label in [("include_cursor","Include cursor"),("freeze","Freeze the screen during selection"),("window_shadow","Add shadows to window captures")]:check("screenshots",key,label)
         check("screenshots","window_wallpaper","Use wallpaper behind window screenshots (Shift makes it transparent)")
-        padding_row=QWidget();padding_layout=QHBoxLayout(padding_row);padding_layout.setContentsMargins(0,0,0,0)
+        padding_row=QWidget();padding_layout=QHBoxLayout(padding_row);ui.set(padding_layout,"setContentsMargins",0,0,0,0)
         padding=QSlider(Qt.Orientation.Horizontal);padding.setRange(0,200);padding.setPageStep(20);padding.setValue(store.settings["window_padding"]);padding.setAccessibleName("Window capture padding")
-        padding_value=QLabel(f"{padding.value()} px");padding_value.setMinimumWidth(55);padding.valueChanged.connect(lambda value:padding_value.setText(f"{value} px"))
+        padding_value=QLabel(f"{padding.value()} px");ui.set(padding_value,"setMinimumWidth",55);padding.valueChanged.connect(lambda value:padding_value.setText(f"{value} px"))
         padding_layout.addWidget(padding);padding_layout.addWidget(padding_value);self.fields["window_padding"]=padding;self.forms["screenshots"].addRow("Window padding",padding_row)
         check("screenshots","capture_ctrl_copy","Copy screenshots when holding Ctrl at capture")
         check("screenshots","convert_srgb","Convert exported images to sRGB")
@@ -581,7 +586,7 @@ class Settings(QDialog):
         check("shortcuts","capture_shortcut_actions","Also run After Capture actions with area shortcuts")
         hint=QLabel("Capture Area & Copy, Save, Annotate and Pin always perform their named action. Enable this to also use the screenshot actions selected in General.");hint.setWordWrap(True);self.forms["shortcuts"].addRow(hint)
         from . import __version__
-        name=QLabel("OmniShot");name.setStyleSheet("font-size:30px;font-weight:600");self.forms["about"].addRow(name)
+        name=QLabel("OmniShot");ui.set(name,"setStyleSheet","font-size:30px;font-weight:600");self.forms["about"].addRow(name)
         version=QLabel(f"Version {__version__}");version.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse);self.forms["about"].addRow(version)
         for text in ("Screenshots, scrolling capture, annotation and screen recording — saved locally.",
                      "Appearance follows your current Omarchy theme.",
@@ -599,7 +604,7 @@ class Settings(QDialog):
         if not custom and not self.wallpaper_follow_at_open and not self.fields["wallpaper_follow_changes"].isChecked() and cached.is_file():path=cached
         image=QImage.fromData(base64.b64decode(self.wallpaper_data)) if custom and self.wallpaper_data else load_image(path) if not custom and path else QImage()
         if image.isNull():self.wallpaper_preview.clear();self.wallpaper_preview.setText("Choose an image" if custom else "No desktop wallpaper available")
-        else:self.wallpaper_preview.setPixmap(QPixmap.fromImage(convert_image(image)).scaled(420,230,Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation))
+        else:self.wallpaper_preview.setPixmap(QPixmap.fromImage(convert_image(image)).scaled(ui.px(420),ui.px(230),Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation))
     def choose_wallpaper(self):
         from .images import IMAGE_FILTER
         path,_=QFileDialog.getOpenFileName(self,"Choose capture wallpaper","",IMAGE_FILTER)
@@ -667,12 +672,12 @@ class ScrollPanel(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.setWindowTitle("OmniShot Scrolling Capture");self.rect_capture=rect;self.store=store
         self.stitcher=ScrollStitcher(horizontal);self.running=False;self.busy=False;self.auto=False;self.no_change=0;self.scrolled_last=False;self.generation=0;self.closed=False;self.finished=False
-        layout=QVBoxLayout(self);layout.setContentsMargins(12,10,12,10)
+        layout=QVBoxLayout(self);ui.set(layout,"setContentsMargins",12,10,12,10)
         self.status=QLabel(f"{rect[2]} × {rect[3]} · Adjust the area, then start capture.");self.status.setWordWrap(True);layout.addWidget(self.status)
         row=QHBoxLayout();self.start_btn=button("Start Capture",self.start,True);self.auto_btn=button("Auto-Scroll",self.toggle_auto);self.auto_btn.hide()
         self.done_btn=button("Done",self.finish,True);self.done_btn.hide();self.cancel_btn=button("Cancel",self.close)
         for b in (self.cancel_btn,self.start_btn,self.auto_btn,self.done_btn):row.addWidget(b)
-        layout.addLayout(row);self.setFixedWidth(430)
+        layout.addLayout(row);ui.set(self,"setFixedWidth",430)
         self.timer=QTimer(self);self.timer.timeout.connect(self.tick);QShortcut(QKeySequence("Escape"),self,activated=self.close)
         self.horizontal=horizontal;self.reached_end=False
         from .overlay_keys import ScrollKeys

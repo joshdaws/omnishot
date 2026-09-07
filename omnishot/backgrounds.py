@@ -1,4 +1,5 @@
 """Local background presets and a live, reversible image background editor."""
+from . import ui_scale as ui
 import base64
 import copy
 from PySide6.QtCore import Qt
@@ -32,10 +33,10 @@ def default_background(store):
 class BackgroundDialog(QDialog):
     def __init__(self, editor):
         super().__init__(editor)
-        self.editor = editor; self.setWindowTitle("Background"); self.resize(980,620)
+        self.editor = editor; self.setWindowTitle("Background"); ui.set(self,"resize",980,620)
         self.original = copy.deepcopy(editor.background)
         self.opts = copy.deepcopy(editor.background or {"color":"#9f86ed", "color2":"#515dbb", "padding":64, "radius":12, "shadow":True, "aspect":"Auto", "align":"Center"})
-        layout=QHBoxLayout(self); self.preview=QLabel(); self.preview.setAlignment(Qt.AlignmentFlag.AlignCenter); self.preview.setMinimumSize(580,500); layout.addWidget(self.preview,1)
+        layout=QHBoxLayout(self); self.preview=QLabel(); self.preview.setAlignment(Qt.AlignmentFlag.AlignCenter); ui.set(self.preview,"setMinimumSize",580,500); layout.addWidget(self.preview,1)
         panel=QVBoxLayout(); form=QFormLayout(); panel.addLayout(form); layout.addLayout(panel)
         self.enabled=QCheckBox("Add background");self.enabled.setChecked(True);form.addRow(self.enabled)
         self.presets=QComboBox();self.presets.addItem("Custom");self.presets.addItems(list(PRESETS)+list(editor.store.settings.get("background_presets",{})));form.addRow("Preset",self.presets)
