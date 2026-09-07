@@ -8,7 +8,8 @@ omnishot_install() (
     printf 'Run this installer as your desktop user, without sudo.\n' >&2
     exit 1
   fi
-  local task_root="${OMNISHOT_INSTALL_DIR:-$HOME/projects/omnishot}"
+  local task_data="${XDG_DATA_HOME:-$HOME/.local/share}"
+  local task_root="${OMNISHOT_INSTALL_DIR:-$task_data/omnishot-app}"
   local task_config="${XDG_CONFIG_HOME:-$HOME/.config}"
   for task_command in omarchy omarchy-shell hyprctl; do
     if ! command -v "$task_command" >/dev/null 2>&1; then

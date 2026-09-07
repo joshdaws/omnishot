@@ -11,4 +11,4 @@ Finish recording and close editable windows first. Quit from the tray menu or ru
 
 Paths above use the default XDG directories; use your configured directories if different. Backups are in the source checkout's `backups/<timestamp>/`. Review differences before restoring a whole file so later customizations are retained.
 
-You can then remove the checkout and its `.venv`. Captures, projects, settings, and history remain in `~/.local/share/omnishot`; exported images normally remain in `~/Pictures/OmniShot`.
+You can then remove the installed checkout at `~/.local/share/omnishot-app` and its `.venv` (or your custom installation path). Earlier installations may use `~/projects/omnishot`; keep that directory if you still use it for development. Captures, projects, settings, and history remain in `~/.local/share/omnishot`; exported images normally remain in `~/Pictures/OmniShot`.

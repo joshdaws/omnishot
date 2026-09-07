@@ -44,6 +44,7 @@ if name == 'git':
            'WAYLAND_DISPLAY': 'test-wayland', 'HYPRLAND_INSTANCE_SIGNATURE': 'test-instance',
            'BOOTSTRAP_LOG': str(log)}
     env.pop('OMNISHOT_INSTALL_DIR', None)
+    env.pop('XDG_DATA_HOME', None)
 
     def run(**changes):
         return subprocess.run(['bash'], input=SCRIPT.read_text(), text=True,
@@ -61,18 +62,18 @@ def test_fresh_install_from_pipe(bootstrap):
     assert result.returncode == 0, result.stderr
     assert 'install ran' in result.stdout
     assert 'OmniShot installed in' in result.stdout
-    assert (home / 'projects/omnishot/install.sh').is_file()
+    assert (home / '.local/share/omnishot-app/install.sh').is_file()
     commands = calls()
     assert [c[0] for c in commands] == ['hyprctl', 'omarchy', 'git']
     assert commands[1][1:3] == ['pkg', 'add']
     assert 'tesseract-data-osd' in commands[1]
     assert commands[2] == ['git', 'clone', '--branch', 'main', '--single-branch', '--',
-                           'https://github.com/joshdaws/omnishot.git', str(home / 'projects/omnishot')]
+                           'https://github.com/joshdaws/omnishot.git', str(home / '.local/share/omnishot-app')]
 
 
 def test_existing_checkout_is_untouched(bootstrap):
     home, run, calls = bootstrap
-    checkout = home / 'projects/omnishot'
+    checkout = home / '.local/share/omnishot-app'
     checkout.mkdir(parents=True)
     (checkout / 'work.txt').write_text('local work')
     result = run()
@@ -88,7 +89,7 @@ def test_rejects_missing_desktop_before_installing_packages(bootstrap):
     assert result.returncode != 0
     assert 'desktop session' in result.stderr
     assert calls() == []
-    assert not (home / 'projects').exists()
+    assert not (home / '.local/share').exists()
 
 
 @pytest.mark.parametrize('failure', ['packages', 'clone', 'build'])
@@ -102,4 +103,29 @@ def test_failure_stops_install_and_never_reports_success(bootstrap, failure):
     if failure == 'packages':
         assert not any(c[0] == 'git' for c in calls())
     if failure != 'build':
-        assert not (home / 'projects/omnishot').exists()
+        assert not (home / '.local/share/omnishot-app').exists()
+
+
+def test_custom_xdg_data_directory(bootstrap, tmp_path):
+    home, run, calls = bootstrap
+    data = tmp_path / 'custom app data'
+    result = run(XDG_DATA_HOME=str(data))
+    assert result.returncode == 0, result.stderr
+    assert (data / 'omnishot-app/install.sh').is_file()
+    assert not (home / '.local/share').exists()
+    assert calls()[-1][-1] == str(data / 'omnishot-app')
+
+
+def test_preserves_development_checkout_and_capture_history(bootstrap):
+    home, run, calls = bootstrap
+    project = home / 'projects/omnishot'
+    project.mkdir(parents=True)
+    (project / 'local-work.txt').write_text('development work')
+    history = home / '.local/share/omnishot'
+    history.mkdir(parents=True)
+    (history / 'capture.png').write_bytes(b'capture data')
+    result = run()
+    assert result.returncode == 0, result.stderr
+    assert (home / '.local/share/omnishot-app/install.sh').is_file()
+    assert (project / 'local-work.txt').read_text() == 'development work'
+    assert (history / 'capture.png').read_bytes() == b'capture data'

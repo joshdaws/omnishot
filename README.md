@@ -35,9 +35,11 @@ Run this one-line installer in a terminal inside a supported Omarchy desktop ses
 curl -fsSL https://raw.githubusercontent.com/joshdaws/omnishot/main/scripts/bootstrap.sh | bash
 ```
 
-It installs missing system packages through `omarchy pkg add` (which may ask for your password), clones the latest community code from `main` into `~/projects/omnishot`, builds the app, and installs its bar widget and shortcuts. Then open **OmniShot** from the app launcher or run `~/.local/bin/omnishot menu`. You can [inspect the installer](scripts/bootstrap.sh) before running it.
+It installs missing system packages through `omarchy pkg add` (which may ask for your password), clones the latest community code from `main` into `~/.local/share/omnishot-app`, builds the app, and installs its bar widget and shortcuts. Then open **OmniShot** from the app launcher or run `~/.local/bin/omnishot menu`. You can [inspect the installer](scripts/bootstrap.sh) before running it.
 
-If `~/projects/omnishot` already exists, the installer stops without changing it. For an existing install, use the [update instructions](#update-and-remove).
+The app files live under `$XDG_DATA_HOME/omnishot-app` (normally `~/.local/share/omnishot-app`), separate from your captures and development projects. Its app-menu entry is `$XDG_DATA_HOME/applications/org.omarchy.OmniShot.desktop`.
+
+If the installation directory already exists, the installer stops without changing it. For an existing install, use the [update instructions](#update-and-remove).
 
 OmniShot is a **desktop application with a companion Omarchy shell bar widget**. `omarchy plugin add` only installs standalone shell plugin repositories and does not build this application's Python environment or native capture helpers.
 
@@ -52,9 +54,9 @@ omarchy pkg add git python python-pip gcc pkgconf wayland wayland-protocols \
   tesseract tesseract-data-eng tesseract-data-osd gpu-screen-recorder libpulse \
   desktop-file-utils shared-mime-info xdg-utils
 
-mkdir -p ~/projects
-git clone https://github.com/joshdaws/omnishot.git ~/projects/omnishot
-cd ~/projects/omnishot
+mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}"
+git clone https://github.com/joshdaws/omnishot.git "${XDG_DATA_HOME:-$HOME/.local/share}/omnishot-app"
+cd "${XDG_DATA_HOME:-$HOME/.local/share}/omnishot-app"
 bash install.sh
 omnishot menu
 ```
@@ -97,13 +99,15 @@ To update, finish any capture/recording and save/close editable windows, then:
 
 ```sh
 omnishot quit
-cd ~/projects/omnishot
+cd "${XDG_DATA_HOME:-$HOME/.local/share}/omnishot-app"
 git pull --ff-only
 bash install.sh
 omnishot menu
 ```
 
-Use your actual checkout path if different. After a Hyprland upgrade, restart your desktop session before rebuilding so the running compositor and installed headers match. `omarchy plugin update` does not update OmniShot: the widget is installed by the application's installer. Your history and settings live in `$XDG_DATA_HOME/omnishot` (normally `~/.local/share/omnishot`) and are separate from the checkout.
+Use your actual checkout path if different. Earlier installs used `~/projects/omnishot`; those continue to work. To switch to the new default, quit OmniShot and run the one-line installer. It creates a fresh installation and repoints the launcher while preserving your history, settings, and old checkout. Development checkouts can still live in `~/projects/omnishot`.
+
+After a Hyprland upgrade, restart your desktop session before rebuilding so the running compositor and installed headers match. `omarchy plugin update` does not update OmniShot: the widget is installed by the application's installer. Your history and settings live in `$XDG_DATA_HOME/omnishot` (normally `~/.local/share/omnishot`) and are separate from the checkout.
 
 Removal is currently manual; see [the removal guide](docs/REMOVE.md). Do not delete your history folder unless you also intend to delete your captures and editable projects.
 
