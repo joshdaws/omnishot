@@ -29,7 +29,19 @@ A native capture extension is built against the installed Hyprland headers and c
 
 ## Install
 
-OmniShot is a **desktop application with a companion Omarchy shell bar widget**. Install the application from this checkout using `install.sh`; it also installs and enables the widget. `omarchy plugin add` only installs standalone shell plugin repositories and does not build this application's Python environment or native capture helpers.
+Run this one-line installer in a terminal inside a supported Omarchy desktop session, **without sudo**:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/joshdaws/omnishot/main/scripts/bootstrap.sh | bash
+```
+
+It installs missing system packages through `omarchy pkg add` (which may ask for your password), clones the latest community code from `main` into `~/projects/omnishot`, builds the app, and installs its bar widget and shortcuts. Then open **OmniShot** from the app launcher or run `~/.local/bin/omnishot menu`. You can [inspect the installer](scripts/bootstrap.sh) before running it.
+
+If `~/projects/omnishot` already exists, the installer stops without changing it. For an existing install, use the [update instructions](#update-and-remove).
+
+OmniShot is a **desktop application with a companion Omarchy shell bar widget**. `omarchy plugin add` only installs standalone shell plugin repositories and does not build this application's Python environment or native capture helpers.
+
+### Manual installation
 
 Run these commands as your normal desktop user in a terminal inside an unlocked, supported Omarchy session. `omarchy pkg add` handles elevation for system packages; run `bash install.sh` **without sudo**.
 
@@ -97,7 +109,7 @@ Removal is currently manual; see [the removal guide](docs/REMOVE.md). Do not del
 
 ## Development status
 
-The latest local suite passes **438 automated tests**. Native Wayland checks cover scrolling → preview → annotation → project reopening, cross-display captures, control exclusion, and image/file dragging. Headed Chromium tests captured 60 vertical rows and 30 horizontal columns at 1.6× with fixed edges intact.
+The automated suite covers capture processing, editing, and installation, including the one-line installer. Native Wayland checks cover scrolling → preview → annotation → project reopening, cross-display captures, control exclusion, and image/file dragging. Headed Chromium tests captured 60 vertical rows and 30 horizontal columns at 1.6× with fixed edges intact.
 
 These checks do not establish exact CleanShot parity or exhaustive hardware compatibility. See the [feature ledger](docs/PARITY.md) and [known limitations](docs/KNOWN_LIMITATIONS.md). GitHub issues are the working backlog; reproducible bugs, device reports, and focused pull requests are welcome.
 
