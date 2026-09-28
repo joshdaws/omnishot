@@ -269,8 +269,14 @@ class Controller:
         from .clean_capture import SelectionMirror
         mirror=SelectionMirror() if live else None
         def work():
+            nonlocal live,mirror
             try:
-                if mirror:mirror.start()
+                if mirror:
+                    from .clean_capture import MirrorUnavailable
+                    try:mirror.start()
+                    except MirrorUnavailable:
+                        # A live overlay would appear in its own capture; freeze instead.
+                        live=False;mirror=None
                 monitors=backend.capture_monitors();visible={m['activeWorkspace']['id'] for m in monitors}
                 clients=[c for c in backend.hypr('clients') if c.get('mapped') and not c.get('hidden') and (c.get('workspace',{}).get('id') in visible or c.get('pinned'))]
                 return [(m,backend.grab(output=m["name"],cursor=self.store.settings["include_cursor"],scale=m["scale"])) for m in monitors],clients

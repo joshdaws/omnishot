@@ -1,6 +1,7 @@
 """Lifecycle for the clean Hyprland mirror and GSR capture source."""
 from __future__ import annotations
 import os
+import platform
 import threading
 from pathlib import Path
 from . import backend
@@ -8,9 +9,14 @@ from . import backend
 NATIVE = Path(__file__).resolve().parent.parent / "native"
 
 
+class MirrorUnavailable(RuntimeError):
+    """Hyprland cannot hook functions on this CPU (aarch64), so the clean mirror cannot load."""
+
+
 class MirrorLease:
     lock=threading.RLock()
     loaded_path=None
+    unavailable=None
     roles={}
     def __init__(self,role):self.role=role;self.enabled=False
     def start(self):
@@ -18,15 +24,28 @@ class MirrorLease:
             if self.enabled:return
             if self.roles.get(self.role,0):
                 self.roles[self.role]+=1;self.enabled=True;return
+            if MirrorLease.unavailable:raise MirrorUnavailable(MirrorLease.unavailable)
             if not (NATIVE/'clean-mirror.so').is_file():raise RuntimeError("OmniShot's capture components need rebuilding. Run install.sh from the OmniShot folder.")
-            if not any(p.get('name')=='omnishot-clean-mirror' for p in backend.hypr('plugin list')):
-                path=(NATIVE/'clean-mirror.so').resolve();backend.run(['hyprctl','plugin','load',path]);MirrorLease.loaded_path=path
+            if not self.loaded():
+                path=(NATIVE/'clean-mirror.so').resolve()
+                # hyprctl exits 0 even when the plugin fails to initialize.
+                output=backend.run(['hyprctl','plugin','load',path]).decode(errors='replace').strip()
+                if not self.loaded():
+                    if 'Could not hook' not in output and platform.machine()=='x86_64':
+                        # e.g. an ABI mismatch after a Hyprland upgrade: fixable, so say so.
+                        raise RuntimeError("OmniShot's capture components need rebuilding. Run install.sh from the OmniShot folder.\n\n"+output)
+                    MirrorLease.unavailable=output or 'The OmniShot compositor plugin could not be loaded'
+                    raise MirrorUnavailable(MirrorLease.unavailable)
+                MirrorLease.loaded_path=path
             try:backend.run(['hyprctl','eval',f'hl.plugin.omnishot.{self.role}({os.getpid()})'])
             except Exception:
                 try:self.unload_unused()
                 except Exception:pass
                 raise
             self.roles[self.role]=self.roles.get(self.role,0)+1;self.enabled=True
+    @staticmethod
+    def loaded():
+        return any(p.get('name')=='omnishot-clean-mirror' for p in backend.hypr('plugin list'))
     def stop(self):
         with self.lock:
             if not self.enabled:self.unload_unused();return
@@ -51,8 +70,14 @@ class SelectionMirror(MirrorLease):
 
 
 class CursorMirror(MirrorLease):
-    """Keep software pointers out of screencopy without excluding app surfaces."""
+    """Keep software pointers out of screencopy without excluding app surfaces.
+
+    Best effort: without the plugin, grim's own cursor flag still applies.
+    """
     def __init__(self):super().__init__('cursor_capture')
+    def start(self):
+        try:super().start()
+        except MirrorUnavailable:pass
 
 
 def monitor_bounds(monitor):
@@ -117,7 +142,11 @@ class CleanCapture:
         for name in ("clean-mirror.so", "clean-capture.so"):
             if not (NATIVE / name).is_file():
                 raise RuntimeError("OmniShot's recording components need rebuilding. Run install.sh from the OmniShot folder.")
-        self.lease.start()
+        try:self.lease.start()
+        except MirrorUnavailable:
+            # Record the plain output instead; OmniShot's controls stay outside
+            # region captures or visible in full-display captures.
+            return False
         self.enabled = True
         return True
 

@@ -36,8 +36,15 @@ def test_clean_source_keeps_audio_and_pause_capable_recorder():
 def test_capture_releases_only_its_own_loaded_extension(monkeypatch,native_capture_files):
     from omnishot import backend
     monitor=dict(name='display',x=0,y=0,width=1920,height=1080,scale=1)
-    calls=[];monkeypatch.setattr(backend,'run',lambda args,**kwargs:calls.append(args) or (b'false' if args[1]=='repl' else b'ok'))
-    monkeypatch.setattr(backend,'hypr',lambda query:[])
+    from omnishot.clean_capture import MirrorLease
+    monkeypatch.setattr(MirrorLease,'unavailable',None)
+    plugins=[]
+    def run(args,**kwargs):
+        calls.append(args)
+        if args[1:3]==['plugin','load']:plugins.append({'name':'omnishot-clean-mirror'})
+        return b'false' if args[1]=='repl' else b'ok'
+    calls=[];monkeypatch.setattr(backend,'run',run)
+    monkeypatch.setattr(backend,'hypr',lambda query:plugins)
     capture=CleanCapture([monitor],None);capture.start();capture.stop()
     assert [call[2] for call in calls if call[1]=='plugin']==['load','unload']
     assert calls[0][-1]==calls[-1][-1] and calls[0][-1].is_absolute() and not calls[0][-1].is_symlink()
@@ -51,7 +58,7 @@ def test_independent_mirror_consumers_and_failed_registration(monkeypatch,native
     from omnishot import backend
     from omnishot.clean_capture import MirrorLease,SelectionMirror,CursorMirror
     plugins=[];calls=[];registered={};fail=[False]
-    monkeypatch.setattr(MirrorLease,'roles',{});monkeypatch.setattr(MirrorLease,'loaded_path',None)
+    monkeypatch.setattr(MirrorLease,'unavailable',None);monkeypatch.setattr(MirrorLease,'roles',{});monkeypatch.setattr(MirrorLease,'loaded_path',None)
     monkeypatch.setattr(backend,'hypr',lambda query:plugins)
     def run(args,**kwargs):
         calls.append(args)
@@ -71,3 +78,38 @@ def test_independent_mirror_consumers_and_failed_registration(monkeypatch,native
     fail[0]=True
     with pytest.raises(RuntimeError,match='registration'):SelectionMirror().start()
     assert not plugins and MirrorLease.loaded_path is None
+
+
+def test_rejected_plugin_degrades_to_plain_capture(monkeypatch,native_capture_files):
+    """aarch64 Hyprland cannot hook functions; hyprctl still exits 0."""
+    from omnishot import backend
+    from omnishot.clean_capture import MirrorLease,MirrorUnavailable,SelectionMirror,CursorMirror
+    monkeypatch.setattr(MirrorLease,'unavailable',None);monkeypatch.setattr(MirrorLease,'roles',{});monkeypatch.setattr(MirrorLease,'loaded_path',None)
+    calls=[];monkeypatch.setattr(backend,'hypr',lambda query:[])
+    def run(args,**kwargs):
+        calls.append(args)
+        if args[1]=='eval':raise AssertionError('registration must not be attempted')
+        return b'Plugin x could not be loaded: plugin crashed/threw in main: Could not hook IElementRenderer::preDrawSurface'
+    monkeypatch.setattr(backend,'run',run)
+    monkeypatch.setattr('platform.machine',lambda:'aarch64')
+    with CursorMirror() as cursor:assert not cursor.enabled
+    capture=CleanCapture([dict(name='display',x=0,y=0,width=1920,height=1080,scale=1)],None)
+    assert capture.start() is False and not capture.enabled
+    assert 'OMNISHOT_CAPTURE_OUTPUT' not in capture.environment()
+    capture.stop()
+    with pytest.raises(MirrorUnavailable,match='preDrawSurface'):SelectionMirror().start()
+    assert [call[2] for call in calls if call[1]=='plugin']==['load']
+
+
+def test_x86_load_failure_asks_for_rebuild(monkeypatch,native_capture_files):
+    """An ABI mismatch is fixable, so it must not silently disable clean capture."""
+    from omnishot import backend
+    from omnishot.clean_capture import MirrorLease,CursorMirror
+    monkeypatch.setattr(MirrorLease,'unavailable',None);monkeypatch.setattr(MirrorLease,'roles',{});monkeypatch.setattr(MirrorLease,'loaded_path',None)
+    monkeypatch.setattr(backend,'hypr',lambda query:[])
+    monkeypatch.setattr(backend,'run',lambda args,**kwargs:b'Plugin x could not be loaded: plugin crashed/threw in main: OmniShot compositor ABI mismatch')
+    monkeypatch.setattr('platform.machine',lambda:'x86_64')
+    for attempt in range(2):
+        with pytest.raises(RuntimeError,match='rebuilding(?s:.*)ABI mismatch'):CursorMirror().start()
+    assert MirrorLease.unavailable is None
+    with pytest.raises(RuntimeError,match='rebuilding'):CleanCapture([dict(name='display',x=0,y=0,width=1920,height=1080,scale=1)],None).start()
