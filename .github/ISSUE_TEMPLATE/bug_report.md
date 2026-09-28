@@ -16,6 +16,7 @@ labels: bug
 - Omarchy version (`omarchy version`):
 - Hyprland version (`hyprctl version`):
 - GPU and display scale/layout:
+- Output of `omnishot doctor --json`:
 
 ## Evidence
 

@@ -15,6 +15,7 @@ native/toplevel-export.h
 native/foreign-toplevel.c
 native/foreign-toplevel.h
 native/*.so
+native/*.abi
 native/screencopy.c
 native/screencopy.h
 native/.clean-build-*/

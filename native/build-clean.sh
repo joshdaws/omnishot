@@ -10,6 +10,9 @@ gcc -std=c11 -fPIC -shared -O2 -I"$task_build" clean-capture.c "$task_build/scre
     $(pkg-config --cflags --libs glesv2 egl wayland-client) -o "$task_build/clean-capture.so"
 c++ -std=c++23 -fPIC -shared -fno-gnu-unique -O2 $(pkg-config --cflags hyprland lua5.4) \
     clean-mirror.cpp -o "$task_build/clean-mirror.so"
+# Record the compositor ABI these headers target, so `omnishot doctor` can tell
+# a stale build from a session that predates a Hyprland upgrade.
+(cd .. && python3 -m omnishot.compat header-abi) >"$task_build/clean-mirror.abi"
 gcc -std=c11 -fPIC -shared -O2 drag-status.c $(pkg-config --cflags --libs wayland-client) -ldl -o "$task_build/drag-status.so"
 gcc -std=c11 -fPIC -shared -O2 -Wall -Wextra -pthread recording-guard.c -o "$task_build/recording-guard.so"
 wayland-scanner client-header wlr-data-control-unstable-v1.xml "$task_build/data-control.h"
@@ -23,6 +26,7 @@ task_digest=$(sha256sum "$task_build/clean-mirror.so" | cut -d ' ' -f 1)
 mv -- "$task_build/clean-mirror.so" ".clean-mirrors/$task_digest.so"
 ln -s ".clean-mirrors/$task_digest.so" "$task_build/mirror-link"
 mv -Tf -- "$task_build/mirror-link" clean-mirror.so
+mv -- "$task_build/clean-mirror.abi" clean-mirror.abi
 mv -- "$task_build/drag-status.so" drag-status.so
 mv -- "$task_build/recording-guard.so" recording-guard.so
 mv -- "$task_build/clipboard-helper" clipboard-helper

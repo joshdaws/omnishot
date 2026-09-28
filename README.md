@@ -27,6 +27,8 @@ Developed and tested on **Omarchy 4.0.2 with Hyprland 0.56.2**, including fracti
 
 A native capture extension is built against the installed Hyprland headers and checks the running compositor ABI before loading. After upgrading Hyprland, restart your desktop session and rebuild OmniShot. GPU recording requires a working `gpu-screen-recorder` setup. Physical camera/microphone coverage and HDR capture are still open work.
 
+Run `omnishot doctor` to check your setup. It compares your Omarchy and Hyprland versions with the tested ones (untested versions only get a warning), checks that the installed Hyprland headers and OmniShot's native build match the running compositor, and reports missing packages, shortcuts, window rules or the bar widget, each with a suggested fix. `omnishot doctor --load-test` also loads the clean recording extension into the running compositor to confirm Hyprland accepts it, then unloads it. Include `omnishot doctor --json` output when reporting a bug.
+
 ## Install
 
 Run this one-line installer in a terminal inside a supported Omarchy desktop session, **without sudo**:
@@ -61,7 +63,7 @@ bash install.sh
 omnishot menu
 ```
 
-Omarchy supplies `omarchy-shell`, Hyprland, and its headers (in the `hyprland` package); their versions must match the running desktop. Use `omarchy version` and `hyprctl version` to check against the compatibility section above. Do not install a different compositor just to satisfy the build. Additional OCR languages require the corresponding `tesseract-data-*` packages. Python dependencies are installed into a local `.venv`; `pip install` alone is not a complete installation.
+Omarchy supplies `omarchy-shell`, Hyprland, and its headers (in the `hyprland` package); their versions must match the running desktop. After installing, run `omnishot doctor` to check them against the compatibility section above. Do not install a different compositor just to satisfy the build. Additional OCR languages require the corresponding `tesseract-data-*` packages. Python dependencies are installed into a local `.venv`; `pip install` alone is not a complete installation.
 
 Keep the checkout and its `.venv` at this location: the launcher uses them directly. To relocate it later, finish your captures, quit OmniShot, clone it at the new location, and run the installer there to create a fresh `.venv` and repoint the launcher.
 

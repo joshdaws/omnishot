@@ -636,7 +636,7 @@ class Controller:
 
 def parse_args(argv=None):
     parser=argparse.ArgumentParser(description="OmniShot native capture and annotation for Omarchy")
-    parser.add_argument("command",nargs="?",default="menu",help="menu, all-in-one, area, area-copy, area-save, area-annotate, area-pin, window, fullscreen, desktop, scroll, scroll-horizontal, previous, timer, ocr, ocr-lines, ocr-single-line, open, clipboard, pin, overlay, history, restore, last, last-screenshot, save-all, close-all, toggle-pins, close-pins, settings, record, stop, pause, restart, scroll-done, quit; also accepts a local filepath or omnishot:// URL")
+    parser.add_argument("command",nargs="?",default="menu",help="menu, all-in-one, area, area-copy, area-save, area-annotate, area-pin, window, fullscreen, desktop, scroll, scroll-horizontal, previous, timer, ocr, ocr-lines, ocr-single-line, open, clipboard, pin, overlay, history, restore, last, last-screenshot, save-all, close-all, toggle-pins, close-pins, settings, record, stop, pause, restart, scroll-done, quit, doctor (check this setup; see omnishot doctor --help); also accepts a local filepath or omnishot:// URL")
     parser.add_argument("path",nargs="?");parser.add_argument("--geometry",help="logical pixels: 'X,Y WxH'")
     parser.add_argument("--action",choices=["overlay","annotate","copy","save","pin"]);parser.add_argument("--delay",type=int)
     args={k:v for k,v in vars(parser.parse_args(argv)).items() if v is not None}
@@ -652,6 +652,12 @@ def parse_args(argv=None):
 
 
 def main(argv=None):
+    argv=sys.argv[1:] if argv is None else argv
+    if argv[:1]==["doctor"]:
+        # Runs without Qt or the single-instance socket, so it still works
+        # when the display or the running app is what is broken.
+        from .doctor import main as doctor
+        return doctor(argv[1:])
     args=parse_args(argv);app=QApplication(sys.argv[:1]);app.setApplicationName("omnishot");app.setDesktopFileName("org.omarchy.OmniShot")
     name=f"omnishot-{os.getuid()}";client=QLocalSocket();client.connectToServer(name)
     if client.waitForConnected(300):

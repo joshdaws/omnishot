@@ -31,6 +31,8 @@ if [[ -z "${WAYLAND_DISPLAY:-}" || -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] || !
 fi
 omarchy plugin validate "$task_root/plugin"
 "$(command -v python)" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else "Python 3.11 or newer is required")'
+# Untested Omarchy or Hyprland versions only warn; see omnishot/compat.py.
+"$(command -v python)" -m omnishot.compat warn
 if [[ ! -x "$task_venv/bin/python" ]]; then python -m venv "$task_venv"; fi
 "$task_venv/bin/pip" install -e "$task_root"
 wayland-scanner client-header native/wlr-virtual-pointer-unstable-v1.xml native/virtual-pointer.h

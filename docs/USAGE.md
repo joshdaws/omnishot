@@ -356,7 +356,14 @@ omnishot pause
 omnishot restart
 omnishot stop
 omnishot scroll-done
+omnishot doctor
+omnishot doctor --json
+omnishot doctor --load-test
 ```
+
+`omnishot doctor` checks the setup without starting the app and exits non-zero
+if something needs fixing. `--load-test` briefly loads the clean recording
+extension into the running compositor; it is never loaded otherwise.
 
 Coordinates are Hyprland logical pixels. Image pixels retain native capture
 resolution. Commands are delivered to one running instance using a user-only
