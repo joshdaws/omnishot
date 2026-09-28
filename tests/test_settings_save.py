@@ -55,3 +55,16 @@ def test_quick_save_exports_current_edits_without_overwriting(tmp_path):
     assert output.exists() and load_image(output).width()==80 and load_image(output).height()==120
     original=output.read_bytes();second=QuickOverlay(path,store);second.save()
     assert output.read_bytes()==original and (tmp_path/"saved/Overview (2).png").exists()
+
+
+def test_hardware_video_decoding_defaults_off_and_roundtrips(tmp_path,monkeypatch):
+    from omnishot import video_decoder
+    app=QApplication.instance() or QApplication([]);store=Store(tmp_path/"data")
+    assert store.settings["hardware_video_decoding"] is False
+    monkeypatch.setattr(video_decoder,"hardware_decoding_supported",lambda:True)
+    dialog=Settings(store,"advanced");box=dialog.fields["hardware_video_decoding"]
+    assert box.isEnabled() and not box.isChecked()
+    box.setChecked(True);dialog.fields["output_dir"].setText(str(tmp_path/"saved"));dialog.save()
+    assert Store(tmp_path/"data").settings["hardware_video_decoding"] is True
+    monkeypatch.setattr(video_decoder,"hardware_decoding_supported",lambda:False)
+    assert not Settings(store,"advanced").fields["hardware_video_decoding"].isEnabled()

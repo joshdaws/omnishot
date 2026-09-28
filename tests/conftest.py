@@ -1,5 +1,13 @@
 """Shared fixtures for tests that stub compositor calls."""
+import os
+
 import pytest
+
+# Decode test clips in software. Hardware decoders need large contiguous
+# buffers (Apple AVD asks for 4 MB blocks); under memory pressure those
+# allocations fail repeatedly and a full run can stall the desktop. Set before
+# any test imports QtMultimedia, which reads this once.
+os.environ['QT_FFMPEG_DECODING_HW_DEVICE_TYPES'] = ','
 
 
 @pytest.fixture
