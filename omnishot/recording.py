@@ -535,7 +535,7 @@ class VideoEditor(QWidget):
             import cv2
             self.camera_reader=cv2.VideoCapture(self.metadata["camera_path"])
         from .video_decoder import configure_preview_decoder
-        configure_preview_decoder()
+        configure_preview_decoder(self.store.settings)
         self.player=MediaPlayer(self);self.audio=QAudioOutput(self);self.sink=QVideoSink(self)
         self.audio.setMuted(True);self.player.setAudioOutput(self.audio);self.player.setVideoOutput(self.sink)
         from .video_ui import build_editor_ui

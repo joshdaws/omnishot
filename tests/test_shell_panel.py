@@ -35,7 +35,7 @@ def test_summons_through_focused_monitor_router(monkeypatch, reply, expected):
         return SimpleNamespace(returncode=0, stdout='{"panelApi":1}' if command[-1] == 'state' else reply)
     monkeypatch.setattr(subprocess, 'run', run)
     assert shell_panel.show() is expected
-    assert calls[-1] == ['omarchy-shell', 'shell', 'summon', 'local.omnishot']
+    assert calls[-1] == ['omarchy-shell', 'shell', 'summon', 'io.github.joshdaws.omnishot']
 
 
 def test_failed_ipc_is_not_treated_as_success(monkeypatch):

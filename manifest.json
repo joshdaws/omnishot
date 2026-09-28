@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.joshdaws.omnishot",
+  "name": "OmniShot",
+  "version": "0.2.0",
+  "author": "OmniShot contributors",
+  "license": "MIT",
+  "description": "Native screenshots, scrolling capture, annotation, recording and capture history.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "plugin/BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "OmniShot",
+    "description": "Capture and annotate",
+    "category": "Utilities",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

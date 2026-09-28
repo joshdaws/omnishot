@@ -127,6 +127,7 @@ DEFAULTS = {
     "record_max_resolution": "Native", "record_scale_video": False,
     "gif_fps": 15, "gif_width": 800, "gif_optimize": True, "gif_quality": 80,
     "fps": 30, "quality": "very_high", "record_cursor": True,
+    "hardware_video_decoding": False,
     "record_system_audio": False, "record_microphone": False, "record_audio_tracks": "single", "record_audio_mono": False,
     "palette": ["#ff5b61", "#ffbc42", "#53d49b", "#60a5fa", "#b48bfa", "#ffffff", "#15171d"],
 }

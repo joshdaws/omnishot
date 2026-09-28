@@ -29,7 +29,12 @@ if [[ -z "${WAYLAND_DISPLAY:-}" || -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] || !
   printf 'Run the installer inside your running Omarchy desktop session.\n' >&2
   exit 1
 fi
-omarchy plugin validate "$task_root/plugin"
+# Validate only the shell-facing files; a built checkout contains symlinks
+# (.venv, native/clean-mirror.so) that the plugin validator rejects.
+task_plugin_check=$(mktemp -d)
+cp -r -- "$task_root/manifest.json" "$task_root/plugin" "$task_plugin_check/"
+omarchy plugin validate "$task_plugin_check" || { rm -rf -- "$task_plugin_check"; exit 1; }
+rm -rf -- "$task_plugin_check"
 "$(command -v python)" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else "Python 3.11 or newer is required")'
 if [[ ! -x "$task_venv/bin/python" ]]; then python -m venv "$task_venv"; fi
 "$task_venv/bin/pip" install -e "$task_root"

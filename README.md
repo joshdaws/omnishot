@@ -35,17 +35,23 @@ Run this one-line installer in a terminal inside a supported Omarchy desktop ses
 curl -fsSL https://raw.githubusercontent.com/joshdaws/omnishot/main/scripts/bootstrap.sh | bash
 ```
 
-It installs missing system packages through `omarchy pkg add` (which may ask for your password), clones the latest community code from `main` into `~/.local/share/omnishot-app`, builds the app, and installs its bar widget and shortcuts. Then open **OmniShot** from the app launcher or run `~/.local/bin/omnishot menu`. You can [inspect the installer](scripts/bootstrap.sh) before running it.
+It adds OmniShot as an Omarchy plugin, then runs its setup: installing missing system packages through `omarchy pkg add` (which may ask for your password), building the app, and installing its bar widget and shortcuts. Then open **OmniShot** from the app launcher or run `~/.local/bin/omnishot menu`. You can [inspect the installer](scripts/bootstrap.sh) before running it.
 
-The app files live under `$XDG_DATA_HOME/omnishot-app` (normally `~/.local/share/omnishot-app`), separate from your captures and development projects. Its app-menu entry is `$XDG_DATA_HOME/applications/org.omarchy.OmniShot.desktop`.
+You can also do the same in two steps:
 
-If the installation directory already exists, the installer stops without changing it. For an existing install, use the [update instructions](#update-and-remove).
+```sh
+omarchy plugin add https://github.com/joshdaws/omnishot.git --enable
+```
 
-OmniShot is a **desktop application with a companion Omarchy shell bar widget**. `omarchy plugin add` only installs standalone shell plugin repositories and does not build this application's Python environment or native capture helpers.
+Then click the OmniShot icon in the bar and choose **Finish setup**. Setup opens a terminal because it may ask for your password.
+
+OmniShot is a **desktop application with a companion Omarchy shell bar widget**. The plugin checkout lives in `$XDG_CONFIG_HOME/omarchy/plugins/io.github.joshdaws.omnishot` and is managed by `omarchy plugin`. Setup builds the app from it into `$XDG_DATA_HOME/omnishot-app` (normally `~/.local/share/omnishot-app`), separate from your captures and development projects, because the build creates files the plugin validator does not allow. Its app-menu entry is `$XDG_DATA_HOME/applications/org.omarchy.OmniShot.desktop`.
+
+If you installed OmniShot before plugin support, run the one-line installer. Setup moves the old `omnishot-app` checkout aside to `omnishot-app.pre-plugin-<timestamp>`, moves the old `local.omnishot` bar widget to the new plugin in the same place, and keeps your history and settings. Delete the old checkout once you are happy with the new installation.
 
 ### Manual installation
 
-Run these commands as your normal desktop user in a terminal inside an unlocked, supported Omarchy session. `omarchy pkg add` handles elevation for system packages; run `bash install.sh` **without sudo**.
+Use this for a development checkout. It installs the bar widget as a plain copy rather than a managed plugin, so `omarchy plugin update` does not update it. Run these commands as your normal desktop user in a terminal inside an unlocked, supported Omarchy session. `omarchy pkg add` handles elevation for system packages; run `bash install.sh` **without sudo**.
 
 ```sh
 # Install missing build and runtime dependencies.
@@ -67,7 +73,7 @@ Keep the checkout and its `.venv` at this location: the launcher uses them direc
 
 The installer adds user-owned launchers, file associations, a bar widget, and Hyprland bindings/rules. It backs up existing files under `backups/<timestamp>/` and does not edit `/usr/share/omarchy/`. It replaces the default Print, Alt+Print, and Super+Ctrl+Print actions; other capture bindings are listed below. Existing image/video default applications are preserved.
 
-The launcher is `~/.local/bin/omnishot`. The companion widget lives in `$XDG_CONFIG_HOME/omarchy/plugins/local.omnishot` (normally `~/.config/omarchy/plugins/local.omnishot`); desktop and MIME entries use `$XDG_DATA_HOME` (normally `~/.local/share`). Capture history is separate from the checkout. The widget uses Omarchy's shell API, and the application reads the active Omarchy theme automatically.
+The launcher is `~/.local/bin/omnishot`. The companion widget lives in `$XDG_CONFIG_HOME/omarchy/plugins/io.github.joshdaws.omnishot` (normally `~/.config/omarchy/plugins/io.github.joshdaws.omnishot`); desktop and MIME entries use `$XDG_DATA_HOME` (normally `~/.local/share`). Capture history is separate from the checkout. The widget uses Omarchy's shell API, and the application reads the active Omarchy theme automatically.
 
 The installer validates the plugin manifest, builds the native helpers, reloads Hyprland and checks for configuration errors. Verify the widget with `omarchy plugin list` and try **Ctrl+Print** followed by clicking the capture preview. If you change widget placement later, reinstalling preserves it. Changed widget code may restart the shell; layout-only changes hot-reload.
 
@@ -108,18 +114,26 @@ Super+Print retains Omarchy's color picker. Change shortcuts in Settings. See th
 To update, finish any capture/recording and save/close editable windows, then:
 
 ```sh
-omnishot quit
-cd "${XDG_DATA_HOME:-$HOME/.local/share}/omnishot-app"
-git pull --ff-only
-bash install.sh
-omnishot menu
+omarchy plugin update io.github.joshdaws.omnishot
 ```
 
-Use your actual checkout path if different. Earlier installs used `~/projects/omnishot`; those continue to work. To switch to the new default, quit OmniShot and run the one-line installer. It creates a fresh installation and repoints the launcher while preserving your history, settings, and old checkout. Development checkouts can still live in `~/projects/omnishot`.
+The bar icon then offers **Apply update**, which quits OmniShot, rebuilds it in a terminal and restarts it. To rebuild without the bar, for example after a Hyprland upgrade, run:
 
-After a Hyprland upgrade, restart your desktop session before rebuilding so the running compositor and installed headers match. `omarchy plugin update` does not update OmniShot: the widget is installed by the application's installer. Your history and settings live in `$XDG_DATA_HOME/omnishot` (normally `~/.local/share/omnishot`) and are separate from the checkout.
+```sh
+bash ~/.config/omarchy/plugins/io.github.joshdaws.omnishot/scripts/setup.sh
+```
 
-Removal is currently manual; see [the removal guide](docs/REMOVE.md). Do not delete your history folder unless you also intend to delete your captures and editable projects.
+After a Hyprland upgrade, restart your desktop session before rebuilding so the running compositor and installed headers match. Your history and settings live in `$XDG_DATA_HOME/omnishot` (normally `~/.local/share/omnishot`) and are separate from the app files.
+
+For a manual or development checkout, update it with `git pull --ff-only` and rerun `bash install.sh` from that folder.
+
+To remove OmniShot, choose **Uninstall OmniShot** from the bar icon, or run:
+
+```sh
+bash ~/.config/omarchy/plugins/io.github.joshdaws.omnishot/scripts/uninstall.sh
+```
+
+It removes the shortcuts, window rules, launcher, desktop entries, built app files and the plugin, backing up any configuration it edits under `$XDG_DATA_HOME/omnishot/config-backups/`. Your captures, projects and settings are kept. For a manual checkout, run `bash scripts/uninstall.sh` from that folder; it leaves the checkout itself in place. The [removal guide](docs/REMOVE.md) covers removing everything by hand. Do not delete your history folder unless you also intend to delete your captures and editable projects.
 
 ## Development status
 

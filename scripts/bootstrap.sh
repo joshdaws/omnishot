@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
-# Keep execution at the end so an incomplete download cannot start installation.
+# One-line installer: add OmniShot as an Omarchy plugin, then build it.
+# Equivalent to `omarchy plugin add <repo> --enable` followed by the widget's
+# "Finish setup". Keep execution at the end so an incomplete download cannot
+# start installation.
 omnishot_install() (
   set -euo pipefail
-  trap 'printf "OmniShot installation failed. Fix the error above, then retry. If the checkout was created, run bash install.sh from that folder.\n" >&2' ERR
+  trap 'printf "OmniShot installation failed. Fix the error above, then retry.\n" >&2' ERR
 
   if (( EUID == 0 )); then
     printf 'Run this installer as your desktop user, without sudo.\n' >&2
     exit 1
   fi
-  local task_data="${XDG_DATA_HOME:-$HOME/.local/share}"
-  local task_root="${OMNISHOT_INSTALL_DIR:-$task_data/omnishot-app}"
   local task_config="${XDG_CONFIG_HOME:-$HOME/.config}"
+  local task_repository="${OMNISHOT_REPOSITORY:-https://github.com/joshdaws/omnishot.git}"
+  local task_id="io.github.joshdaws.omnishot"
+  local task_plugin="$task_config/omarchy/plugins/$task_id"
   for task_command in omarchy omarchy-shell hyprctl; do
     if ! command -v "$task_command" >/dev/null 2>&1; then
       printf 'OmniShot requires a supported Omarchy desktop (missing %s).\n' "$task_command" >&2
@@ -25,20 +29,18 @@ omnishot_install() (
     printf 'Run this installer in a terminal inside your running Omarchy desktop session.\n' >&2
     exit 1
   fi
-  if [[ -e "$task_root" || -L "$task_root" ]]; then
-    printf 'Destination already exists: %s\nNothing was changed. For an existing OmniShot installation, follow the Update and remove section at https://github.com/joshdaws/omnishot#update-and-remove\n' "$task_root" >&2
+  if [[ -e "$task_plugin" || -L "$task_plugin" ]] && [[ ! -d "$task_plugin/.git" ]]; then
+    printf 'A manually installed OmniShot widget exists at %s\nNothing was changed. Remove that folder, then retry.\n' "$task_plugin" >&2
     exit 1
   fi
 
-  printf 'Installing missing system dependencies through Omarchy. You may be asked for your password.\n'
-  omarchy pkg add git python python-pip gcc pkgconf wayland wayland-protocols \
-    cairo libxkbcommon libglvnd lua54 grim slurp wl-clipboard ffmpeg \
-    tesseract tesseract-data-eng tesseract-data-osd gpu-screen-recorder libpulse \
-    desktop-file-utils shared-mime-info xdg-utils libnotify
-  mkdir -p -- "$(dirname -- "$task_root")"
-  GIT_TERMINAL_PROMPT=0 git clone --branch main --single-branch -- https://github.com/joshdaws/omnishot.git "$task_root"
-  (cd -- "$task_root" && bash install.sh)
-  printf '\nOmniShot installed in %s\nOpen it from the app launcher or run: ~/.local/bin/omnishot menu\n' "$task_root"
+  if [[ ! -d "$task_plugin/.git" ]]; then
+    command -v git >/dev/null 2>&1 || omarchy pkg add git
+    omarchy plugin add "$task_repository" --enable --yes
+  else
+    printf 'OmniShot is already added as a plugin; rebuilding it.\n'
+  fi
+  bash "$task_plugin/scripts/setup.sh"
 )
 
 omnishot_install

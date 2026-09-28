@@ -201,7 +201,7 @@ class QuickOverlay(QWidget):
         if self.hover_player is None:
             from PySide6.QtMultimedia import QMediaPlayer,QVideoSink
             from .video_decoder import configure_preview_decoder
-            configure_preview_decoder()
+            configure_preview_decoder(self.store.settings)
             self.hover_player=MediaPlayer(self);self.hover_sink=QVideoSink(self);self.hover_player.setVideoOutput(self.hover_sink);self.hover_player.setLoops(QMediaPlayer.Loops.Infinite);self.hover_player.setSource(QUrl.fromLocalFile(str(self.path.resolve())))
             def frame_changed(frame):
                 image=frame.toImage()
@@ -238,7 +238,7 @@ class QuickOverlay(QWidget):
             from PySide6.QtMultimedia import QMediaPlayer,QAudioOutput
             from PySide6.QtMultimediaWidgets import QVideoWidget
             from .video_decoder import configure_preview_decoder
-            configure_preview_decoder()
+            configure_preview_decoder(self.store.settings)
             video=QVideoWidget();layout.addWidget(video);player=MediaPlayer(dialog);audio=QAudioOutput(dialog);player.setAudioOutput(audio);player.setVideoOutput(video);player.setSource(QUrl.fromLocalFile(str(self.path.resolve())));player.play();dialog.finished.connect(player.stop)
         else:
             label=QLabel();label.setAlignment(Qt.AlignmentFlag.AlignCenter);label.setPixmap(QPixmap.fromImage(convert_image(load_image(self.content_path))).scaled(920,620,Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation));layout.addWidget(label)
@@ -497,7 +497,7 @@ class Settings(QDialog):
         def spin(page,key,label,lo,hi,suffix=""):
             box=QSpinBox();box.setRange(lo,hi);box.setValue(store.settings[key]);box.setSuffix(suffix);self.fields[key]=box;self.forms[page].addRow(label,box)
         def check(page,key,label):
-            box=QCheckBox(label);box.setChecked(store.settings.get(key,False));self.fields[key]=box;self.forms[page].addRow(box)
+            box=QCheckBox(label);box.setChecked(store.settings.get(key,False));self.fields[key]=box;self.forms[page].addRow(box);return box
         folder=QWidget();row=QHBoxLayout(folder);ui.set(row,"setContentsMargins",0,0,0,0);self.fields["output_dir"]=QLineEdit(store.settings["output_dir"]);row.addWidget(self.fields["output_dir"]);row.addWidget(button("Choose…",self.choose_folder));self.forms["general"].addRow("Save folder",folder)
         self.forms["general"].addRow("Appearance",QLabel("Follows your Omarchy theme"));spin("advanced","history_days","Keep capture history",1,30," days")
         labels.update(both="File and image",file="File only",image="Image only")
@@ -506,6 +506,10 @@ class Settings(QDialog):
         check("advanced","url_api_enabled","Enable URL scheme API")
         check("advanced","ask_capture_name","Ask for a name after every capture")
         check("advanced","filename_scale_suffix","Append display scale to image filenames (@2x, @1.6x)")
+        from .video_decoder import hardware_decoding_supported
+        decoding=check("advanced","hardware_video_decoding","Use hardware video decoding for previews")
+        decoding.setToolTip("Can play large videos more smoothly, but may stall the desktop when memory is low. Applies after OmniShot restarts." if hardware_decoding_supported() else "Unavailable on Intel graphics, which can crash while seeking.")
+        if not hardware_decoding_supported():decoding.setEnabled(False)
         self.forms["advanced"].addRow("File name format",button("Customize…",self.customize_filename))
         self.filename_preview=QLabel(self.filename_options["filename_format"]);self.filename_preview.setTextFormat(Qt.TextFormat.PlainText);self.filename_preview.setWordWrap(True);self.forms["advanced"].addRow(self.filename_preview)
         title=QLabel("After Capture");ui.set(title,"setStyleSheet","font-size:16px;font-weight:600");self.forms["general"].addRow(title)

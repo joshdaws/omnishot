@@ -226,8 +226,8 @@ class Controller:
             background(work,done,fail)
         def begin(_=None):QTimer.singleShot(180 if mode=="timer" else int(delay*1000)+180,execute)
         if getattr(self,"shell_available",False):
-            from .shell_panel import call
-            background(lambda:call("shell","hide","local.omnishot"),begin,begin)
+            from .shell_panel import PLUGIN_ID,call
+            background(lambda:call("shell","hide",PLUGIN_ID),begin,begin)
         else:begin()
 
     def window_selection(self,action,name_context=None):

@@ -14,6 +14,7 @@ def install_home(tmp_path, monkeypatch):
     source = tmp_path / 'checkout'
     for name in ('plugin', 'packaging'):
         shutil.copytree(repo / name, source / name)
+    shutil.copy2(repo / 'manifest.json', source / 'manifest.json')
     home, config, data = (tmp_path / name for name in ('home', 'config', 'data'))
     home.mkdir()
     (config / 'hypr').mkdir(parents=True)
@@ -35,7 +36,15 @@ def install_home(tmp_path, monkeypatch):
     monkeypatch.setattr('subprocess.run', run)
     monkeypatch.setattr(shutil, 'which', lambda name: '/usr/bin/' + name)
     return SimpleNamespace(source=source, home=home, config=config, data=data, calls=calls,
-                           install=lambda: runpy.run_path(str(repo / 'scripts/install_user.py')))
+                           install=lambda: runpy.run_path(str(repo / 'scripts/install_user.py')),
+                           uninstall=lambda: runpy.run_path(str(repo / 'scripts/uninstall_user.py')))
+
+
+PLUGIN_ID = 'io.github.joshdaws.omnishot'
+
+
+def layout(env):
+    return json.loads((env.config / 'omarchy/shell.json').read_text())['bar']['layout']
 
 
 def test_reinstall_preserves_widget_placement_and_user_config(install_home):
@@ -45,7 +54,8 @@ def test_reinstall_preserves_widget_placement_and_user_config(install_home):
     env.install()
     assert all(p.read_bytes() == before for p, before in first.items())
     shell = json.loads((env.config / 'omarchy/shell.json').read_text())
-    assert shell['bar']['layout']['left'] == [{'id': 'local.omnishot'}]
+    # The pre-plugin id is renamed in place, keeping the user's placement.
+    assert shell['bar']['layout']['left'] == [{'id': PLUGIN_ID}]
     assert shell['bar']['layout']['right'] == [{'id': 'omarchy.clock'}]
     assert shell['idle']['lock'] == 600
     assert len(list((env.source / 'backups').iterdir())) == 2
@@ -77,3 +87,95 @@ def test_bad_shell_config_does_not_partially_install(install_home):
     assert not env.data.exists()
     assert not (env.source / 'backups').exists()
     assert not env.calls
+
+
+def test_manual_install_copies_widget_under_plugin_id(install_home):
+    env = install_home
+    env.install()
+    plugin = env.config / 'omarchy/plugins' / PLUGIN_ID
+    manifest = json.loads((plugin / 'manifest.json').read_text())
+    assert manifest['id'] == PLUGIN_ID
+    assert (plugin / manifest['entryPoints']['barWidget']).read_bytes() == (env.source / 'plugin/BarWidget.qml').read_bytes()
+
+
+def test_migrates_legacy_widget_with_its_settings(install_home):
+    env = install_home
+    legacy = env.config / 'omarchy/plugins/local.omnishot'
+    legacy.mkdir(parents=True)
+    (legacy / 'BarWidget.qml').write_text('old widget')
+    (legacy / 'manifest.json').write_text('{}')
+    shell = env.config / 'omarchy/shell.json'
+    shell.write_text(json.dumps({'bar': {'layout': {'left': [], 'right': [
+        {'id': 'omarchy.clock'}, {'id': 'local.omnishot', 'custom': 1}]}}}))
+    env.install()
+    assert not legacy.exists()
+    assert layout(env)['right'] == [{'id': 'omarchy.clock'}, {'id': PLUGIN_ID, 'custom': 1}]
+    backup = next((env.source / 'backups').iterdir())
+    assert (backup / 'local.omnishot-BarWidget.qml').read_text() == 'old widget'
+    assert ['omarchy', 'restart', 'shell'] in env.calls
+
+
+def test_migration_keeps_legacy_position_over_default_placement(install_home):
+    # `omarchy plugin add --enable` places the new id before setup migrates.
+    env = install_home
+    shell = env.config / 'omarchy/shell.json'
+    shell.write_text(json.dumps({'bar': {'layout': {'left': [], 'right': [
+        {'id': 'local.omnishot', 'custom': 1}, {'id': 'omarchy.tray'}, {'id': PLUGIN_ID}]}}}))
+    env.install()
+    assert layout(env)['right'] == [{'id': PLUGIN_ID, 'custom': 1}, {'id': 'omarchy.tray'}]
+
+
+def test_plugin_managed_checkout_is_never_written(install_home):
+    env = install_home
+    plugin = env.config / 'omarchy/plugins' / PLUGIN_ID
+    (plugin / '.git').mkdir(parents=True)
+    (plugin / 'manifest.json').write_text('from git')
+    (env.config / 'omarchy/shell.json').write_text(json.dumps({'bar': {'layout': {'right': [{'id': 'local.omnishot'}]}}}))
+    env.install()
+    assert (plugin / 'manifest.json').read_text() == 'from git'
+    assert not (plugin / 'plugin').exists()
+    # `omarchy plugin add --enable` placed the widget; a stale legacy entry is dropped.
+    assert layout(env)['right'] == [{'id': PLUGIN_ID}]
+    (env.config / 'omarchy/shell.json').write_text(json.dumps({'bar': {'layout': {'right': []}}}))
+    env.install()
+    assert layout(env)['right'] == []
+
+
+def test_uninstall_restores_configuration_and_keeps_captures(install_home):
+    env = install_home
+    tracked = {name: (env.config / name).read_text() for name in ('hypr/hyprland.lua', 'hypr/bindings.lua')}
+    shell_before = json.loads((env.config / 'omarchy/shell.json').read_text())
+    (env.config / 'mimeapps.list').write_text('[Default Applications]\nimage/png=viewer.desktop;\n')
+    captures = env.data / 'omnishot/captures'
+    captures.mkdir(parents=True)
+    (captures / 'shot.png').write_bytes(b'capture')
+    env.install()
+    with (env.config / 'mimeapps.list').open('a') as f:
+        f.write('application/x-omnishot=org.omarchy.OmniShot.desktop;\nimage/jpeg=org.omarchy.OmniShot.desktop;viewer.desktop;\n')
+    managed = env.config / 'omarchy/plugins/other.plugin'
+    (managed / '.git').mkdir(parents=True)
+    env.uninstall()
+    assert {name: (env.config / name).read_text() for name in tracked} == tracked
+    shell_before['bar']['layout']['left'] = []
+    assert json.loads((env.config / 'omarchy/shell.json').read_text()) == shell_before
+    assert (env.config / 'mimeapps.list').read_text() == '[Default Applications]\nimage/png=viewer.desktop;\nimage/jpeg=viewer.desktop;\n'
+    assert not (env.home / '.local/bin/omnishot').exists()
+    assert not (env.data / 'applications/org.omarchy.OmniShot.desktop').exists()
+    assert not (env.config / 'hypr/omnishot.lua').exists()
+    assert not (env.config / 'omarchy/plugins' / PLUGIN_ID).exists()
+    assert managed.exists()
+    assert (captures / 'shot.png').read_bytes() == b'capture'
+    backups = next((env.data / 'omnishot/config-backups').iterdir())
+    assert (backups / 'config/hypr/bindings.lua').read_text() != tracked['hypr/bindings.lua']
+
+
+def test_uninstall_leaves_plugin_checkout_and_foreign_launcher(install_home):
+    env = install_home
+    plugin = env.config / 'omarchy/plugins' / PLUGIN_ID
+    (plugin / '.git').mkdir(parents=True)
+    launcher = env.home / '.local/bin/omnishot'
+    launcher.parent.mkdir(parents=True)
+    launcher.write_text('#!/bin/sh\necho something else\n')
+    env.uninstall()
+    assert plugin.exists()
+    assert launcher.read_text() == '#!/bin/sh\necho something else\n'

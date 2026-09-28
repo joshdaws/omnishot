@@ -2,6 +2,9 @@
 import json
 import subprocess
 
+# Must match manifest.json and the widget's ipcTarget.
+PLUGIN_ID = 'io.github.joshdaws.omnishot'
+
 
 def call(*args):
     try:
@@ -13,7 +16,7 @@ def call(*args):
 
 def available():
     try:
-        state = json.loads(call('local.omnishot', 'state'))
+        state = json.loads(call(PLUGIN_ID, 'state'))
         return isinstance(state, dict) and state.get('panelApi') == 1
     except (ValueError, TypeError):
         return False
@@ -21,4 +24,4 @@ def available():
 
 def show():
     # The shell routes this to the widget on the focused monitor.
-    return available() and call('shell', 'summon', 'local.omnishot') == 'ok'
+    return available() and call('shell', 'summon', PLUGIN_ID) == 'ok'

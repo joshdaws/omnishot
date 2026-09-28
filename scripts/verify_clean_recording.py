@@ -98,7 +98,7 @@ try:
     camera.show(); recording.place_window(camera, client["at"][0]+100, client["at"][1]+100)
     QTest.qWait(1000)
     if bar_check:
-        QTest.qWait(1300);bar=json.loads(backend.run(["omarchy-shell","local.omnishot","state"]))
+        QTest.qWait(1300);bar=json.loads(backend.run(["omarchy-shell","io.github.joshdaws.omnishot","state"]))
         assert bar["recording"] and bar["show_time"]==(not hidden),bar
         assert (":" in bar["text"])==(not hidden),bar
     if hidden:

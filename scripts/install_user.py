@@ -15,14 +15,15 @@ data_home=Path(os.environ.get("XDG_DATA_HOME",home/".local/share"))
 # Validate inputs before writing launchers or changing desktop configuration.
 shell=config/"omarchy/shell.json"
 data=json.loads(shell.read_text())
-manifest=json.loads((source/"plugin/manifest.json").read_text())
+manifest=json.loads((source/"manifest.json").read_text())
+plugin_id=manifest["id"];legacy_id="local.omnishot"
 bindings=config/"hypr/bindings.lua";old=bindings.read_text()
 hypr=config/"hypr/hyprland.lua";hypr_text=hypr.read_text()
 stamp=datetime.now().strftime("%Y%m%d-%H%M%S-%f")
 backup=source/"backups"/stamp;backup.mkdir(parents=True,exist_ok=True)
 
-def preserve(path):
-    if path.exists():shutil.copy2(path,backup/path.name)
+def preserve(path,name=None):
+    if path.exists():shutil.copy2(path,backup/(name or path.name))
 
 bin_dir=home/".local/bin";bin_dir.mkdir(parents=True,exist_ok=True)
 launcher=bin_dir/"omnishot";preserve(launcher)
@@ -32,18 +33,31 @@ mime_dir=data_home/"mime";mime_packages=mime_dir/"packages";mime_packages.mkdir(
 preserve(mime_packages/"omnishot.xml");shutil.copy2(source/"packaging/omnishot.xml",mime_packages/"omnishot.xml")
 desktop=applications/"org.omarchy.OmniShot.desktop";preserve(desktop)
 desktop.write_text('[Desktop Entry]\nType=Application\nName=OmniShot\nComment=Capture, scroll, annotate and record\nExec="'+str(launcher)+'" %u\nIcon=camera-photo\nTerminal=false\nCategories=Graphics;Utility;\nMimeType=image/png;image/jpeg;image/webp;image/heic;image/heif;image/gif;video/mp4;video/webm;video/quicktime;video/x-matroska;application/x-omnishot;application/x-omnishot-video;x-scheme-handler/omnishot;\nActions=Capture;Scroll;History;\n\n[Desktop Action Capture]\nName=Capture\nExec="'+str(launcher)+'" menu\n\n[Desktop Action Scroll]\nName=Scrolling Capture\nExec="'+str(launcher)+'" scroll\n\n[Desktop Action History]\nName=Capture History\nExec="'+str(launcher)+'" history\n')
-plugin=config/"omarchy/plugins/local.omnishot";plugin.mkdir(parents=True,exist_ok=True)
-widget=(source/"plugin/BarWidget.qml").read_bytes()
-installed_widget=plugin/"BarWidget.qml"
-widget_changed=not installed_widget.exists() or installed_widget.read_bytes()!=widget
-if (plugin/"manifest.json").exists():
-    widget_changed=widget_changed or json.loads((plugin/"manifest.json").read_text()).get("entryPoints",{}).get("barWidget")!="BarWidget.qml"
-preserve(installed_widget);installed_widget.write_bytes(widget)
-preserve(plugin/"manifest.json");(plugin/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
+plugins=config/"omarchy/plugins";plugin=plugins/plugin_id
+# `omarchy plugin add` owns a git checkout here and updates it itself; never
+# write into it. Manual installs get a plain copy with the same layout.
+managed=(plugin/".git").exists()
+widget_changed=False
+if not managed:
+    (plugin/"plugin").mkdir(parents=True,exist_ok=True)
+    widget=(source/"plugin/BarWidget.qml").read_bytes();installed_widget=plugin/"plugin/BarWidget.qml"
+    widget_changed=not installed_widget.exists() or installed_widget.read_bytes()!=widget
+    preserve(installed_widget);installed_widget.write_bytes(widget)
+    preserve(plugin/"manifest.json");(plugin/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
+legacy=plugins/legacy_id
+if legacy.is_dir() and not (legacy/".git").exists():
+    for name in ("BarWidget.qml","manifest.json"):preserve(legacy/name,legacy_id+"-"+name)
+    shutil.rmtree(legacy);widget_changed=True
 preserve(shell)
 layout=data.setdefault("bar",{}).setdefault("layout",{})
-if not any(v.get("id")=="local.omnishot" for section in ("left","center","right") for v in layout.get(section,[])):
-    layout.setdefault("right",[]).insert(0,{"id":"local.omnishot"})
+def placed(id):return any(v.get("id")==id for section in ("left","center","right") for v in layout.get(section,[]))
+if placed(legacy_id):
+    # Keep the widget where the user put it, with any inline settings. This
+    # wins over the default spot `omarchy plugin add --enable` just chose.
+    for section in ("left","center","right"):
+        if section in layout:layout[section]=[dict(v,id=plugin_id) if v.get("id")==legacy_id else v for v in layout[section] if v.get("id")!=plugin_id]
+if not managed and not placed(plugin_id):
+    layout.setdefault("right",[]).insert(0,{"id":plugin_id})
 shell_text=json.dumps(data,indent=2)+"\n"
 if shell.read_text()!=shell_text:shell.write_text(shell_text)
 preserve(bindings)

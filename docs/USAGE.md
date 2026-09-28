@@ -292,25 +292,24 @@ spanning displays currently use hidden or outside-region controls.
 ## Install / update
 
 Follow the [installation instructions](../README.md#install) for supported
-versions, the complete package list, and first-time setup in `~/projects/omnishot`.
-OmniShot is a desktop application with a companion shell widget; `omarchy plugin
-add` alone cannot install its Python environment and native helpers. Python
-dependencies are isolated in the checkout's `.venv`.
+versions, the complete package list, and first-time setup. OmniShot is an Omarchy
+plugin whose bar widget builds the desktop application: after
+`omarchy plugin add`, choose **Finish setup** from the bar icon. Python
+dependencies are isolated in the app folder's `.venv`.
 
-Run the installer as your desktop user, without sudo, inside an unlocked Omarchy
+Run setup as your desktop user, without sudo, inside an unlocked Omarchy
 session. For an update, finish capture/recording and save/close editable windows first:
 
 ```sh
-omnishot quit
-cd ~/projects/omnishot
-git pull --ff-only
-bash install.sh
-omnishot menu
+omarchy plugin update io.github.joshdaws.omnishot
 ```
 
-The installer adds a launcher, desktop entry, shell bar widget and user-owned
+Then choose **Apply update** from the bar icon. It quits OmniShot, rebuilds it in
+a terminal and restarts it.
+
+Setup adds a launcher, desktop entry, shell bar widget and user-owned
 Hyprland rules/bindings. It never edits `/usr/share/omarchy/`. Existing user
-configuration backups are under `backups/<timestamp>/` (excluded from Git).
+configuration backups are under the app folder's `backups/<timestamp>/`.
 Widget updates refresh the Omarchy shell when the QML changes, avoiding stale
 components in its live cache. The desktop entry handles local images, editable
 projects, GIF/MP4/WebM/MOV/MKV recordings and `omnishot://` URLs. File managers
@@ -321,14 +320,15 @@ Save All asks for a folder and closes successfully saved previews. Close All
 keeps captures in History; Restore brings back the most recently closed preview.
 
 The clean recording component checks the running Hyprland ABI before loading.
-Re-run the installer after compositor upgrades; restart the session if the running
+Re-run setup after compositor upgrades; restart the session if the running
 compositor and installed headers differ. It activates only during recording and
 automatically deactivates if the recording application exits.
 
-The application's installer also updates the widget; `omarchy plugin update`
-does not update this checkout. Captures and editable projects remain in history.
+For a manual or development checkout, run `git pull --ff-only` and
+`bash install.sh` in that folder instead; `omarchy plugin update` does not update
+it. Captures and editable projects remain in history.
 
-The source checkout and `.venv` must remain at their installed location.
+The app folder and its `.venv` must remain at their installed location.
 User captures, history, settings and editable exports live under
 `$XDG_DATA_HOME/omnishot` (normally `~/.local/share/omnishot`). Normal file exports
 default to `~/Pictures/OmniShot`; change this in Settings.
